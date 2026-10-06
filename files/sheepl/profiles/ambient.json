@@ -1,0 +1,26 @@
+{
+  "sheepl": {
+    "name": "Ambient",
+    "total_time": "10m",
+    "typing_speed": 50,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": [
+          "http://10.2.10.10"
+        ]
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "echo %USERNAME% checking in",
+          "dir %USERPROFILE%\\Documents",
+          "whoami /groups"
+        ]
+      }
+    ]
+  }
+}

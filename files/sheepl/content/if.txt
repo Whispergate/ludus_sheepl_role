@@ -1,0 +1,22 @@
+Weekly Operations Report
+
+This document is a sample input used by Sheepl to emulate a user typing
+content into a Word document. Replace it with any plain text you would like
+the emulated user to produce during a lab exercise.
+
+Summary
+
+All scheduled maintenance tasks completed on time this week. No outages were
+reported and the backup jobs ran successfully overnight. The team continued
+work on the network segmentation project and expects to finish testing next
+week.
+
+Action Items
+
+Review the updated firewall rules before deployment.
+Confirm the new endpoints are reporting to the monitoring server.
+Schedule the next patch window with the infrastructure team.
+
+Notes
+
+Please direct any questions about this report to the operations mailbox.

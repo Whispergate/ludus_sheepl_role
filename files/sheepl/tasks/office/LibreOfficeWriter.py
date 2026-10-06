@@ -1,17 +1,29 @@
 
 # #######################################################################
 #
-#  Task : WordDocument Interaction
+#  Task : LibreOfficeWriter Interaction
 #
 # #######################################################################
 
 
 """
  Creates the autoIT stub code to be passed into the master compile
- Takes a supplied text file for the Sheepl to type into a wordocument
+ Takes a supplied text file for the Sheepl to type into a LibreOffice
+ Writer document.
+
+ This is the LibreOffice counterpart to the WordDocument task. LibreOffice
+ is cross-platform, but as Sheepl emits AutoIT the generated automation
+ drives LibreOffice Writer on a Windows endpoint (soffice.exe is launched
+ via its App Paths registration).
+
+ Note on escaping:
+    The document text and the save path are delivered with Send(), so both
+    are passed through escape_autoit_send() to stop characters such as
+    ! + ^ # { } being interpreted as modifier keystrokes.
 
 """
-__author__ = "Matt Lorentzen @lorentzenman"
+
+__author__ = "Lavender-exe"
 __license__ = "MIT"
 
 
@@ -20,12 +32,11 @@ import sys
 import textwrap
 from pathlib import Path
 
-#from utils.typing import TypeWriter
 from utils.base.base_cmd_class import BaseCMD
 from utils import primitives as P
 
 
-class WordDocument(BaseCMD):
+class LibreOfficeWriter(BaseCMD):
     """
     Inherits from BaseCMD
         This parent class contains:
@@ -38,38 +49,35 @@ class WordDocument(BaseCMD):
     def __init__(self, csh, cl):
 
         # Calling super to inherit from the BaseCMD Class __init__
-        super(WordDocument, self).__init__(csh, cl)
+        super(LibreOfficeWriter, self).__init__(csh, cl)
 
         # Override the defined task name
-        self.taskname = 'WordDocument'
+        self.taskname = 'LibreOfficeWriter'
 
         self.csh = csh
         # current colour object
         self.cl = cl
-        
-         # Overrides Base Class Prompt Setup
+
+        # Overrides Base Class Prompt Setup
         if csh.creating_subtasks == True:
             print("[^] creating subtasks >>>>>>>>")
-            self.baseprompt = cl.yellow('[>] Creating subtask\n{} > command >: '.format(csh.name.lower()))
+            self.baseprompt = cl.yellow('[>] Creating subtask\n{} > libreofficewriter >: '.format(csh.name.lower()))
         else:
-            self.baseprompt = cl.yellow('{} > worddocument >: '.format(csh.name.lower()))
+            self.baseprompt = cl.yellow('{} > libreofficewriter >: '.format(csh.name.lower()))
 
         self.prompt = self.baseprompt
 
-        # booleans to enforce requirements
-        #self.typing_block = ''
-
-        # creating my own 
+        # creating my own
         self.introduction = """
         ----------------------------------
-        [!] WordDocument Interaction.
+        [!] LibreOfficeWriter Interaction.
         Type help or ? to list commands.
         ----------------------------------
         1: Start a new document using 'new'
         2: Add content with 'input_file'
         3: Complete the document using 'complete'
         """
-          
+
         self.indent_space = '    '
 
         # ----------------------------------- >
@@ -80,58 +88,45 @@ class WordDocument(BaseCMD):
         self.input_file = None
         self.typing_block = ''
 
-        # AutoIT header file
-        self.autoIT_include_statement = "#include <Word.au3>"
-
-        # might be good to uplift this to the base class as
-        # all modules might want the option
-        # Check to make sure it's not already there, and if not add
-        if not self.autoIT_include_statement in self.csh.autoIT_UDF_includes:
-            self.csh.autoIT_UDF_includes.append(self.autoIT_include_statement)
-
         # ----------------------------------- >
-        # now call the loop if we are in interactive mode by checking 
+        # now call the loop if we are in interactive mode by checking
         # if we are parsing JSON
-        
+
         if not self.csh.json_parsing:
             # call the intro and then start the loop
             print(textwrap.dedent(self.introduction))
             self.cmdloop()
 
     ########################################################################
-    # WordDocument Console Commands
+    # LibreOfficeWriter Console Commands
     ########################################################################
 
 
     def do_new(self, arg):
-        """ 
-        This command creates a new Word document
         """
-        # Init tracking booleans
+        This command creates a new LibreOffice Writer document
+        """
         # method from parent class BaseCMD
-        # Inverse check to see if task has already started
-        # Booleans are set in parent method
         if self.check_task_started() == False:
-            print("[!] Starting : 'WordDocument_{}'".format(str(self.csh.counter.current())))
+            print("[!] Starting : 'LibreOfficeWriter_{}'".format(str(self.csh.counter.current())))
 
             # init typing block with an empty string when new is first called
             self.typing_block = ""
 
-            print("[?] Enter the name to save the document")
-            ## BUG check for extension!!
+            print("[?] Enter the name to save the document (include .odt or .doc)")
             file_name = input(self.cl.yellow(">: "))
             print("[?] Enter the Windows path location for document save")
             save_path = input(self.cl.yellow(">: "))
             # need to escape the Windows backslash
             if not save_path.endswith("\\"):
                 save_path = save_path + '\\'
-            # set the taskname to the word document path and name
+            # set the taskname to the document path and name
             self.save_name = save_path + file_name
 
             print("[!] Saving the file as : {}".format(self.cl.red(self.save_name)))
             # OCD Line break
             print()
-            self.prompt = self.cl.blue("[*] Active Document : " + self.save_name) + "\n" + self.baseprompt       
+            self.prompt = self.cl.blue("[*] Active Document : " + self.save_name) + "\n" + self.baseprompt
 
 
     def do_input_file(self, inputf):
@@ -139,49 +134,36 @@ class WordDocument(BaseCMD):
         Specify the path to the input text file for typing
         < input_file /path/to/file >
         """
-
-        """
-        This file will also get pushed through the TypeWriter eventually
-        """
-
         try:
             if inputf:
                 if self.taskstarted:
                     print("[+] Assigning '{}' for typing ".format(inputf))
-                    
-                    # now open and read this file and append to the 
-                    # typing block
+
+                    # now open and read this file and append to the typing block
                     with open(inputf) as f:
                         self.typing_block += (f.read().strip())
                 else:
-                    print(self.cl.red("[!] <ERROR> You need to start a new WordDocument Interaction."))
+                    print(self.cl.red("[!] <ERROR> You need to start a new LibreOfficeWriter Interaction."))
                     print(self.cl.red("[!] <ERROR> Start this with 'new' from the menu."))
 
             else:
                 print(self.cl.red("[!] <ERROR> You need to supply the input file for typing"))
-        except:
+        except (IOError, OSError):
             print(self.cl.red("[!] <ERROR> Accessing input file"))
 
 
     def do_complete(self, arg):
-        """ 
-        This command assigns the save and close Word Functions
         """
-        # check check to see if this is already set after a succesful document creation
-        # should never been 
-
-        print("task close out and write object for :" + self.csh.name)
+        This command assigns the save and close Writer functions
+        """
         print("[!] Completing Task : {}".format(self.taskname))
-        # >>>>>>>>>>>>>>>>>  COMMITS THE DOC <<<<<<<<<<<<<<<<<<<<<
-        
-        # Here you can perform some checks based on what the task needs        
+
         if self.taskstarted:
             if self.typing_block:
                 self.create_autoIT_block()
             else:
                 print("{} Nothing has been set to type into the document - set input_file".format(self.cl.red("[!]")))
                 return None
-            
 
         # now reset the tracking values and prompt
         self.complete_task()
@@ -190,22 +172,17 @@ class WordDocument(BaseCMD):
         self.save_name = ""
         self.typing_block = ""
 
-        
+
     #######################################################################
-    #  WordDocument AutoIT Block Definition
+    #  LibreOfficeWriter AutoIT Block Definition
     #######################################################################
 
     def create_autoIT_block(self):
         """
         Creates the AutoIT Script Block
-        Note :
-            Kwargs returns a dictionary
-            do these values can be referenced
-            by the keys directly
         """
-        
         current_counter = str(self.csh.counter.current())
-        self.csh.add_task('WordDocument_' + current_counter, self.create_autoit_function())
+        self.csh.add_task('LibreOfficeWriter_' + current_counter, self.create_autoit_function())
 
 
     def create_autoit_function(self):
@@ -224,56 +201,42 @@ class WordDocument(BaseCMD):
 
     def build_primitives(self):
         """
-        Expresses the Word document as primitives. The Word COM automation
-        (the _Word_* UDF calls) and the single-Send typing block have no
-        OS-neutral form, so they are emitted via Raw; focus release and the
-        Alt+F4 close use neutral primitives. The cross-platform counterpart is
-        the LibreOfficeWriter task.
+        Expresses the LibreOffice Writer document as OS-neutral primitives :
+        launch Writer, type the content line by line, save via the Save As
+        dialog, quit. The typing is neutral (TypeText + Enter per line) so it
+        renders on both the AutoIT and Linux backends.
         """
 
-        return [
-            P.Comment("Creates a Word Document : {}".format(self.save_name)),
-            P.Raw(self._word_create_block()),
-            P.Raw(self._word_typing_send()),
-            P.Comment("Reset the SendKeep Active"),
-            P.ReleaseFocus(),
-            P.Raw(self._word_save_block()),
-            P.SendKeys("!{F4}"),
+        prims = [
+            P.Comment("Creates a LibreOffice Writer Document : {}".format(self.save_name)),
+            P.RunDialog("soffice --writer"),
+            P.Comment("LibreOffice can be slow to start, so allow a generous wait"),
+            P.Sleep(10000),
+            P.Comment("LibreOffice windows use the SALFRAME class"),
+            P.WaitWindow("[CLASS:SALFRAME]", 30),
+            P.FocusWindow("[CLASS:SALFRAME]"),
+            P.Comment("type the document, a line at a time"),
         ]
-
-
-    def _word_create_block(self):
-        """ Raw AutoIT : create a Word instance and a new document. """
-        return textwrap.dedent("""\
-            Local $oWord = _Word_Create()
-            ; Add a new empty document
-            $oDoc = _Word_DocAdd($oWord)
-            WinActivate("[CLASS:OpusApp]")
-            WinWaitActive("[CLASS:OpusApp]")
-            SendKeepActive("[CLASS:OpusApp]")""")
-
-
-    def _word_typing_send(self):
-        """
-        Raw AutoIT : one Send with the whole document; a blank source line
-        becomes an {ENTER} keystroke, other lines are escaped.
-        """
-        typing_text = 'Send("'
-        for l in self.typing_block.splitlines():
-            if len(l) == 0:
-                typing_text += "{ENTER}"
-            else:
-                typing_text += self.escape_autoit_send(l)
-        typing_text += '")'
-        return typing_text
-
-
-    def _word_save_block(self):
-        """ Raw AutoIT : save the document to its path and close it. """
-        return textwrap.dedent("""\
-            ; now save
-            _Word_DocSaveAs($oDoc,'{}', $WdFormatDocumentDefault)
-            _Word_DocClose($oDoc)""".format(self.save_name))
+        # type each source line and press Enter (a blank line is just an Enter)
+        for line in self.typing_block.splitlines():
+            prims.append(P.TypeText(line))
+            prims.append(P.SendKeys("{ENTER}"))
+        prims += [
+            P.Comment("Reset the SendKeep Active before driving the dialogs"),
+            P.ReleaseFocus(),
+            P.Comment("open the Save As dialog"),
+            P.SendKeys("^s"),
+            P.WaitWindow("Save", 10),
+            P.Comment("type the full save path and confirm"),
+            P.TypeLine(self.save_name),
+            P.Sleep(2000),
+            P.Comment("accept the 'Use <format>' prompt if LibreOffice shows one"),
+            P.SendKeys("{ENTER}"),
+            P.Sleep(1000),
+            P.Comment("close LibreOffice ; the document is already saved"),
+            P.SendKeys("^q"),
+        ]
+        return prims
 
 
     def parse_json_profile(self, **kwargs):
@@ -282,10 +245,10 @@ class WordDocument(BaseCMD):
         this function sets the various object attributes in the same way
         that the interactive mode does
         """
-    
+
         print("[%] Setting attributes from JSON Profile")
         # This snippet takes the keys ignoring the first key which is task and then shows
-        # what should be set in the kwargs parsing. 
+        # what should be set in the kwargs parsing.
         print(f"[-] The following keys are needed for this task : {[x for x in list(kwargs.keys())[1:]]}")
 
         try:
@@ -298,19 +261,16 @@ class WordDocument(BaseCMD):
         print(f"[*] Setting the input file attribute : {self.input_file}")
         print(f"[*] Setting the save filename attribute : {self.save_name}")
 
-        # now read the input file and set 'self.typing_block' to the contents
         # use a Path object so the file is validated before it is opened, rather
         # than crashing the whole run with an unhandled FileNotFoundError
         input_path = Path(self.input_file)
         if not input_path.is_file():
             print(self.cl.red("[!] Input file not found : {}".format(self.input_file)))
-            print(self.cl.red("[!] Skipping WordDocument task"))
+            print(self.cl.red("[!] Skipping LibreOfficeWriter task"))
             return
 
         self.typing_block += input_path.read_text().strip()
 
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()
-
-
 

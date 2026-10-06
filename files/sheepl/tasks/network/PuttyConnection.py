@@ -20,6 +20,7 @@ import random
 import textwrap
 
 from utils.base.base_cmd_class import BaseCMD
+from utils import primitives as P
 #from utils.typing import TypeWriter
 
 
@@ -266,17 +267,50 @@ class PuttyConnection(BaseCMD):
 
 
     def create_autoit_function(self):
-        """ 
-        Grabs all the output from the respective functions and builds the AutoIT output
         """
-        autoIT_script = (
-            self.autoit_function_open() +
-            self.open_puttyconnection() +
-            self.text_typing_block() +
-            self.close_puttyconnection()
+        Builds the ordered primitive list for this task and hands it to the
+        backend to render into the target automation language.
+        """
+
+        return self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
 
-        return autoIT_script
+
+    def build_primitives(self):
+        """
+        Expresses the PuTTY session as OS-neutral primitives : launch PuTTY,
+        open the connection to the host from the config box, log in, type each
+        command with a random dwell, then exit.
+        """
+
+        prims = [
+            P.Comment("Creates a PuttyConnection Interaction"),
+            P.RunDialog("putty"),
+            P.WaitWindow("[CLASS:PuTTYConfigBox]", 10),
+            P.FocusWindow("[CLASS:PuTTYConfigBox]"),
+            P.SendKeys("!n"),
+            P.TypeLine(self.computer),
+            P.Comment("accept the host-key prompt if shown, else this is the active PuTTY window"),
+            P.WaitWindow("[CLASS:PuTTY]", 10),
+            P.FocusWindow("[CLASS:PuTTY]"),
+            P.Sleep(5982),
+            P.Comment("now log in with creds"),
+            P.TypeLine(self.username),
+            P.Sleep(4000),
+            P.TypeLine(self.password),
+            P.Sleep(4000),
+        ]
+        for command in self.commands:
+            prims.append(P.TypeLine(command))
+            prims.append(P.Sleep(random.randint(2000, 20000)))
+        prims.append(P.TypeLine("exit"))
+        prims.append(P.Comment("Reset Focus"))
+        prims.append(P.ReleaseFocus())
+        return prims
 
 
     def parse_json_profile(self, **kwargs):
@@ -301,122 +335,11 @@ class PuttyConnection(BaseCMD):
             print(f"[*] Setting the command attribute : {self.username}")
             print(f"[*] Setting the command attribute : {self.password}")
             print(f"[*] Setting the command attribute : {self.commands}")
-        
-        except:
-            print(self.cl.red("[!] Error Setting JSON Profile attributes, check matching key values in the profile"))
+
+        except KeyError as missing_key:
+            print(self.cl.red("[!] Error Setting JSON Profile attributes : missing key {}".format(missing_key)))
 
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()
 
     
-    # --------------------------------------------------->
-    # Create Open Block
-
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-         """
-
-        function_declaration = """
-        ; < ----------------------------------------- >
-        ;         PuttyConnection Interaction        
-        ; < ----------------------------------------- >
-
-        """
-        if self.csh.creating_subtasks == False:
-            function_declaration += "PuttyConnection_{}()".format(str(self.csh.counter.current()))
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_puttyconnection(self):
-            """
-            Creates the AutoIT Function Declaration Entry
-            """
-            
-            """
-            # Note a weird bug that the enter needs to be 
-            # passed as format string argument as escaping
-            # is ignored on a multiline for some reason
-            # if it gets sent as an individual line as in text_typing_block()
-            # >> typing_text += "Send('exit{ENTER}')"
-            # everything works. Strange, Invoke-OCD, and then stop caring
-            # and push it through the format string.
-            """
-
-            _open_puttyconnection = """
-
-            Func PuttyConnection_{}()
-
-                ; Creates a PuttyConnection Interaction
-
-                Send("#r")
-                ; Wait 10 seconds for the Run dialogue window to appear.
-                WinWaitActive("Run", "", 10)
-                Send("putty{}")
-                WinWaitActive("[CLASS:PuTTYConfigBox]", "", 10)
-                SendKeepActive("[CLASS:PuTTYConfigBox]")
-
-                Send("!n")
-                Send("{}")              
-
-                ; need an if else check here--
-                ; if the window title is "PuTTY Security Alert then this is asking for host verification
-                ; so need to send the ALT Y to this to accept the warning
-                ; else this is the active PUTTY class
-
-                WinWaitActive("[CLASS:PuTTY]", "", 10)
-                SendKeepActive("[CLASS:PuTTY]")
-
-                sleep(5982)
-                ; now log in with creds
-                Send("{}")
-                sleep(4000)
-                Send("{}")
-                sleep(4000)
-
-            """.format(str(self.csh.counter.current()), "{ENTER}",
-                            self.computer + "{ENTER}",
-                            self.username + "{ENTER}",
-                            self.password + "{ENTER}"
-                        )
-
-            return textwrap.dedent(_open_puttyconnection)
-
-
-    def text_typing_block(self):
-        """
-        Takes the Typing Text Input
-        """
-
-        # now loop round the input_text
-        # represents how someone would use the enter key when typing
-
-        typing_text = '\n'        
-
-        for command in self.commands:
-            # these are individual send commands so don't need to be wrapped in a block
-            typing_text += ('Send("' + command + '{ENTER}")\n')
-            command_delay = str(random.randint(2000, 20000))
-            typing_text += ("sleep(" + command_delay + ")\n")
-     
-        # add in exit
-        typing_text += "Send('exit{ENTER}')\n"
-        typing_text += "; Reset Focus\n"
-        typing_text += 'SendKeepActive("")'
-
-        return textwrap.indent(typing_text, self.indent_space)
-
-
-    def close_puttyconnection(self):
-        """
-        Closes the PuttyConnection appliation function declaration
-        """
-
-        end_func = """
-
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)

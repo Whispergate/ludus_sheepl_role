@@ -1,0 +1,60 @@
+{
+  "sheepl" :
+  {
+    "name": "Blair",
+    "total_time": "35m",
+    "typing_speed": 40,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "Get-ADUser -Filter * -Properties LastLogonDate | Select-Object Name,LastLogonDate",
+          "Get-ADComputer -Filter * | Measure-Object",
+          "Get-ADGroupMember -Identity 'Domain Admins'"
+        ]
+      },
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "nltest /dclist:lab.local",
+          "net accounts /domain",
+          "dsquery user -limit 5"
+        ]
+      },
+      {
+        "task"  : "PuttyConnection",
+        "computer" : "10.10.10.50",
+        "username" : "root",
+        "password" : "L1nuxAdm1n#2024",
+        "cmd" : [
+          "df -h",
+          "systemctl status sshd",
+          "tail -n 50 /var/log/auth.log"
+        ]
+      },
+      {
+        "task"  : "KeePass",
+        "database_location" : "c:\\users\\blair\\Documents\\domain-creds.kdbx",
+        "masterpassword" : "M@sterK3y!Vault"
+      },
+      {
+        "task"  : "Clipboard",
+        "clear" : true,
+        "items" : [
+          "svc_backup : B@ckup#Svc!2026",
+          "da_recovery_key: 7f3a-99c1-20bd-4e5a"
+        ]
+      },
+      {
+        "task"  : "Browser",
+        "browser" : "edge",
+        "urls" : [
+          "https://admin.lab.local",
+          "https://portal.azure.com"
+        ]
+      }
+    ]
+  }
+}

@@ -25,6 +25,7 @@ import textwrap
 
 from utils.base.base_cmd_class import BaseCMD
 from utils.base.base_cmd_class import SubTaskCMD
+from utils import primitives as P
 
 
 class RemoteDesktop(BaseCMD):
@@ -235,22 +236,97 @@ class RemoteDesktop(BaseCMD):
                                 
     
     def create_autoit_function(self):
-        """ 
-        Grabs all the output from the respective functions and builds the AutoIT output
+        """
+        Builds the RemoteDesktop function from primitives, then appends the
+        assigned subtask function definitions *outside* it (the RDP function
+        calls them inline). The mstsc-specific open/close sequences have no
+        OS-neutral form, so they are emitted via Raw.
         """
 
-        autoIT_script = (
-            self.autoit_function_open() +
-            self.open_remotedesktop() +
-            self.text_typing_block() +
-            self.close_RemoteDesktop() +
-            self.append_subtasks()
+        rdp_block = self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
+
+        # the subtask function definitions live outside the RDP function
+        subtask_defs = self.append_subtasks()
 
         # reset the subtasks option ready for next one
         self.csh.subtasks = {}
 
-        return autoIT_script
+        return rdp_block + subtask_defs
+
+
+    def build_primitives(self):
+        """
+        Open the RDP session (Raw : mstsc dialog driving), call each assigned
+        subtask function inline, then tear the session down (Raw).
+        """
+
+        prims = [P.Raw(self._rdp_open_body())]
+
+        for key in self.csh.subtasks.keys():
+            prims.append(P.Comment("############################################"))
+            prims.append(P.Comment("[!] Assigned Subtask Interaction >> " + str(key)))
+            prims.append(P.CallFunction(str(key)))
+            prims.append(P.Comment("[>] Assigned subtask function"))
+
+        prims.append(P.Raw(self._rdp_close_body()))
+        return prims
+
+
+    def _rdp_open_body(self):
+        """ Raw AutoIT : launch mstsc, enter the connection details and log in. """
+        computer = self.escape_autoit_send(self.computer)
+        username = self.escape_autoit_send(self.username)
+        password = self.escape_autoit_send(self.password)
+        lines = [
+            "; Creates a RemoteDesktop Interaction",
+            'Send("#r")',
+            "; Wait 10 seconds for the Run dialogue window to appear.",
+            'WinWaitActive("Run", "", 10)',
+            "; <PROGRAM EXECUTION>",
+            'Send("mstsc{ENTER}")',
+            'WinWaitActive("Remote Desktop Connection", "", 10)',
+            "; Send ALT 'o' to open the RDP options",
+            'Send("!o")',
+            "Sleep(2000)",
+            "; Send ALT 'c' to focus to computer",
+            'Send("!c")',
+            "Sleep(2000)",
+            "; Send RDP Connection Information",
+            'Send("' + computer + '{TAB}")',
+            "Sleep(2000)",
+            'Send("' + username + '{ENTER}")',
+            "Sleep(2000)",
+            'Send("' + password + '{ENTER}")',
+            "Sleep(2000)",
+            'Send("!y")',
+            "; pins the RDP connection as focus",
+            'WinWaitActive("[CLASS:TscShellContainerClass]")',
+            'SendKeepActive("[CLASS:TscShellContainerClass]")',
+            "; sends key strokes to RDP session to focus Windows key",
+            'Send("{ALT}{HOME}")',
+        ]
+        return "\n".join(lines)
+
+
+    def _rdp_close_body(self):
+        """ Raw AutoIT : restore focus and close the RDP session window. """
+        lines = [
+            'Send("{CAPSLOCK}")',
+            "; Need a short sleep here for focus to restore properly.",
+            "Sleep(150)",
+            'Send("{CAPSLOCK}")',
+            'WinClose("[CLASS:TscShellContainerClass]")',
+            "Sleep(50)",
+            "; probably need a check for the popup window based on visible text",
+            'ControlClick("Remote Desktop Connection", "", "[Class:Button;Instance:1]")',
+            'SendKeepActive("")',
+        ]
+        return "\n".join(lines)
 
 
     def parse_json_profile(self, **kwargs):
@@ -269,7 +345,9 @@ class RemoteDesktop(BaseCMD):
             self.computer = kwargs["computer"]
             self.username = kwargs["username"]
             self.password = kwargs["password"]
-            self.subtasks = kwargs["subtasks"]          
+            # subtasks are parsed separately by the profile loader and live on
+            # the Sheepl object (self.csh.subtasks), so this kwarg is optional
+            self.subtasks = kwargs.get("subtasks", {})
 
             print(f"[*] Setting the command attribute : {self.computer}")
             print(f"[*] Setting the command attribute : {self.username}")
@@ -281,158 +359,11 @@ class RemoteDesktop(BaseCMD):
             # need to get pushed to self.csh.subtasks
            
         
-        except:
-            print(self.cl.red("[!] Error Setting JSON Profile attributes, check matching key values in the profile"))
+        except KeyError as missing_key:
+            print(self.cl.red("[!] Error Setting JSON Profile attributes : missing key {}".format(missing_key)))
 
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()
-
-    # --------------------------------------------------->
-    # Create Open Block
-
-    
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-        when using textwrap.dedent you need to add in the backslash
-        to the start of the multiline
-        """
-
-        function_declaration = """
-        ; < --------------------------------------- >
-        ;         RemoteDesktop Interaction        
-        ; < --------------------------------------- >
-
-        RemoteDesktop_{}()
-
-        """.format(self.csh.counter.current())
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_remotedesktop(self):
-        """
-        Creates the AutoIT Function Declaration Entry
-        """
-
-        """
-        # Note a weird bug that the enter needs to be 
-        # passed as format string argument as escaping
-        # is ignored on a multiline for some reason
-        # if it gets sent as an individual line as in text_typing_block()
-        # >> typing_text += "Send('exit{ENTER}')"
-        # everything works. Strange, Invoke-OCD, and then stop caring
-        # and push it through the format string.
-
-        # Note > Send('yourprogram{ENTER}')
-        # Example : Send('powershell{ENTER}')
-        """
-
-        _open_remotedesktop = """
-
-        Func RemoteDesktop_{}()
-
-            ; Creates a RemoteDesktop Interaction
-
-            Send("#r")
-            ; Wait 10 seconds for the Run dialogue window to appear.
-            WinWaitActive("Run", "", 10)
-            ; note this needs to be escaped
-            ; <PROGRAM EXECUTION>
-            Send("mstsc{}")
-            WinWaitActive("Remote Desktop Connection", "", 10)
-            ;SendKeepActive("[CLASS:OpusApp]") get the name of this class
-            ; Send ALT 'o' to open the RDP options
-            Send("!o")
-            Sleep(2000)
-            ;Send ALT 'c' to focus to computer
-            Send("!c")
-            Sleep(2000)
-
-            ; Send RDP Connection Informaiton
-            Send("{}{}")
-            Sleep(2000)
-            Send("{}{}")
-            Sleep(2000)
-            Send("{}{}")
-            Sleep(2000)
-            Send("!y")
-
-            ; pins the RDP connection as focus
-            WinWaitActive("[CLASS:TscShellContainerClass]")
-            SendKeepActive("[CLASS:TscShellContainerClass]")
-
-            ; sends key strokes to RDP session to focus Windows key
-            Send("{}{}")
-
-        """.format(self.csh.counter.current(), "{ENTER}",
-                    self.computer, "{TAB}",
-                    self.username, "{ENTER}",
-                    self.password, "{ENTER}",
-                    "{ALT}", "{HOME}"
-        )
-
-        return textwrap.dedent(_open_remotedesktop)   
-
-
-    def text_typing_block(self):
-        """
-        Takes the Typing Text Input
-        The bulk of Remote Desktop interactions
-        are via subtasks 
-        """
-        typing_text = ''
-
-        #for key, value in self.commands:
-        for key, value in self.csh.subtasks.items():
-            #print("The key is >> {}".format(key))
-        
-            typing_text += ("\n; ############################################\n")
-            typing_text += ("; [!] Assigned Subtask Interaction >> " + str(key) + '\n')
-            typing_text += (str(key) + "()" + '\n')
-            typing_text += "; [>] Assigned subtask function\n"
-
-        # for command in self.commands:
-        #     # these are individual send commands so don't need to be wrapped in a block
-        #     typing_text += 'Send("' + command + '{ENTER}")'
-        #     command_delay = str(random.randint(2000, 20000))
-        #     typing_text += 'sleep(" + command_delay + ")'
-
-        # for task_name, task_output in self.commands.items():
-        #     print(task_name, task_output)
-
-        # # add in exit
-        # typing_text += 'Send("exit{ENTER}")'
-        # typing_text += "\n; Reset Focus"
-        # typing_text += '\nSendKeepActive("")'
-
-
-        return textwrap.indent(typing_text, self.indent_space * 2)
-
-
-    def close_RemoteDesktop(self):
-        """
-        Closes the RemoteDesktop application function declaration
-        """
-
-        end_func = """
-
-            Send("{CAPSLOCK}")
-            ; Need a short sleep here for focus to restore properly.
-	        Sleep(150)
-            Send("{CAPSLOCK}")
-            WinClose("[CLASS:TscShellContainerClass]")
-            Sleep(50)
-            ; probably need a check for the popup window based on visible text
-            ControlClick("Remote Desktop Connection", "", "[Class:Button;Instance:1]")
-            SendKeepActive("")
-
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)
-
 
     def append_subtasks(self):
         """
@@ -445,11 +376,11 @@ class RemoteDesktop(BaseCMD):
         for key, value in self.csh.subtasks.items():
             #print("The key is >> {}".format(key))
         
-            typing_text += ("\n; ############################################\n")
-            typing_text += ("; [!] Assigned Subtask Interaction >> " + str(key) + '\n')
-            typing_text += ("; [!] Parent : RemoteDesktop \n")
+            typing_text += ("\n" + self.csh.backend.comment("############################################") + "\n")
+            typing_text += (self.csh.backend.comment("[!] Assigned Subtask Interaction >> " + str(key)) + "\n")
+            typing_text += (self.csh.backend.comment("[!] Parent : RemoteDesktop") + "\n")
 
-            typing_text += "\n; [>] Assigned subtask function\n"
+            typing_text += ("\n" + self.csh.backend.comment("[>] Assigned subtask function") + "\n")
             typing_text += str(value)
         
         return textwrap.dedent(typing_text)

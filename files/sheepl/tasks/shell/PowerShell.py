@@ -24,6 +24,7 @@ import textwrap
 
 # Sheepl Class Imports
 from utils.base.base_cmd_class import BaseCMD
+from utils import primitives as P
 
 
 
@@ -202,17 +203,37 @@ class PowerShell(BaseCMD):
 
     def create_autoit_function(self):
         """
-        Grabs all the output from the respective functions and builds the AutoIT output
+        Builds the ordered primitive list for this task and hands it to the
+        backend to render into the target automation language.
         """
 
-        autoIT_script = (
-            self.autoit_function_open() +
-            self.open_powershell() +
-            self.text_typing_block() +
-            self.close_powershell()
+        return self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
 
-        return autoIT_script
+
+    def build_primitives(self):
+        """
+        Expresses the PowerShell interaction as OS-neutral primitives : open a
+        PowerShell prompt (keeping focus, handling the RDP case), type each
+        command with a random dwell, then exit.
+        """
+
+        prims = [
+            P.Comment("Creates a PowerShell Interaction"),
+            P.RunDialog("powershell"),
+            P.Raw(self.rdp_focus_check("Windows PowerShell")),
+        ]
+        for command in self.commands:
+            prims.append(P.TypeLine(command))
+            prims.append(P.Sleep(random.randint(2000, 20000)))
+        prims.append(P.TypeLine("exit"))
+        prims.append(P.Comment("Reset Focus"))
+        prims.append(P.ReleaseFocus())
+        return prims
 
     
     def parse_json_profile(self, **kwargs):
@@ -232,118 +253,4 @@ class PowerShell(BaseCMD):
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()   
 
-    # --------------------------------------------------->
-    # Create Open Block
-    
-    
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-        when using textwrap.dedent you need to add in the backslash
-        to the start of the multiline
-        """
-        function_declaration = """\
-        ; < ----------------------------------- >
-        ; <      PowerShell Interaction
-        ; < ----------------------------------- >
-        
-        """
-        # this is an important check as you cannot have nested functions in autoit
-        # so you need to check whether to include the command call or not
-        # if you are creating subtasks then this call gets pulled from the 
-        # 'key' of the subtasks dictionary so cannot be included here
-        # which is the reason for this check
-        # in other words, all functions need to be declared without nesting
-        # it is about where you call the function that matters which in the case
-        # of subtasking, is from the parent
-
-        if self.csh.creating_subtasks == False:
-            function_declaration += "PowerShell_{}()".format(str(self.csh.counter.current()))
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_powershell(self):
-        """
-        Creates the AutoIT Function Declaration Entry
-        """
-        
-        """
-        # Note a weird bug that the enter needs to be 
-        # passed as format string argument as escaping
-        # is ignored on a multiline for some reason
-        # if it gets sent as an individual line as in text_typing_block()
-        # >> typing_text += "Send('exit{ENTER}')"
-        # everything works. Strange, Invoke-OCD, and then stop caring
-        # and push it through the format string.
-        """
-
-        _open_powershell = """
-
-        Func PowerShell_{}()
-
-            ; Creates a PowerShell Interaction
-
-            Send("#r")
-            ; Wait 10 seconds for the Run dialogue window to appear.
-            WinWaitActive("Run", "", 10)
-            ; note this needs to be escaped
-            Send('powershell{}')
-            ; check to see if we are already in an RDP session
-            $active_window = _WinAPI_GetClassName(WinGetHandle("[ACTIVE]"))
-            ConsoleWrite($active_window & @CRLF)
-            $inRDP = StringInStr($active_window, "TscShellContainerClass")
-            ; if the result is greater than 1 we are inside an RDP session
-            if $inRDP < 1 Then
-                WinWaitActive("Windows PowerShell", "", 10)
-                SendKeepActive("Windows PowerShell")
-            EndIf
-
-        """.format(str(self.csh.counter.current()), "{ENTER}")
-
-        return textwrap.dedent(_open_powershell)
-
-
-    # --------------------------------------------------->
-    # Typing Ouput
-
-    def text_typing_block(self):
-        """
-        Takes the Typing Text Input
-        """
-
-        # Grabas the command list and goes through it
-        # This uses the textwrap.indent to add in the indentation      
-
-        typing_text = '\n'        
-
-        for command in self.commands:
-            # these are individual send commands so don't need to be wrapped in a block
-            typing_text += ('Send("' + command + '{ENTER}")\n')
-            command_delay = str(random.randint(2000, 20000))
-            typing_text += ("sleep(" + command_delay + ")\n")
-     
-        # add in exit
-        typing_text += "Send('exit{ENTER}')\n"
-        typing_text += "; Reset Focus\n"
-        typing_text += 'SendKeepActive("")'
-
-        return textwrap.indent(typing_text, self.indent_space)
-
-
-    # --------------------------------------------------->
-    # Close AutoIT Function
-
-    def close_powershell(self):
-        """
-        Closes the Command Shell appliation function declaration
-        """
-
-        end_func = """
-
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)
 

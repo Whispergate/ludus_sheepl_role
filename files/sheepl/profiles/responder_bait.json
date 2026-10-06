@@ -1,0 +1,27 @@
+{
+  "sheepl": {
+    "name": "Responder Bait",
+    "total_time": "10m",
+    "typing_speed": 50,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task": "RunCommand",
+        "cmd": [
+          "\\\\fileserver01"
+        ]
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "net view \\\\fileserver01",
+          "net use \\\\fileserver01\\NETLOGON",
+          "dir \\\\fileserver01\\data",
+          "ping -n 2 fileserver01",
+          "net use \\\\10.2.10.10\\NETLOGON"
+        ]
+      }
+    ]
+  }
+}

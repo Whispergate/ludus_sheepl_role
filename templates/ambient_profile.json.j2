@@ -7,8 +7,9 @@
     "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
     "tasks": [
       {
-        "task": "InternetExplorer",
-        "destination_url": "{{ ludus_sheepl_intranet_url }}"
+        "task": "Browser",
+        "browser": "edge",
+        "urls": ["{{ ludus_sheepl_intranet_url }}"]
       },
       {
         "task": "CommandShell",

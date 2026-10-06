@@ -38,6 +38,21 @@
           "gwmi win32_service",
           "ls c:\\"
         ]
+      },
+      {
+        "task"  : "Browser",
+        "browser" : "edge",
+        "urls" : [
+          "https://www.google.com/search?q=privilege+escalation+windows"
+        ]
+      },
+      {
+        "task"  : "Clipboard",
+        "clear" : true,
+        "items" : [
+          "powershell -enc <base64payload>",
+          "runas /user:admin cmd"
+        ]
       }
     ]
   }

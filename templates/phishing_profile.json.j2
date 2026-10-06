@@ -7,18 +7,20 @@
     "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
     "tasks": [
       {
-        "task": "InternetExplorer",
-        "destination_url": "{{ ludus_sheepl_portal_url }}"
-      },
-      {
-        "task": "InternetExplorer",
-        "destination_url": "{{ ludus_sheepl_intranet_url }}"
+        "task": "Browser",
+        "browser": "edge",
+        "urls": ["{{ ludus_sheepl_portal_url }}"]
       },
       {
         "task": "CommandShell",
         "cmd": [
           "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File C:/ProgramData/Sheepl/open_intake.ps1"
         ]
+      },
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": ["{{ ludus_sheepl_intranet_url }}"]
       }
     ]
   }

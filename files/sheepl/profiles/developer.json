@@ -1,0 +1,62 @@
+{
+  "sheepl" :
+  {
+    "name": "Dakota",
+    "total_time": "30m",
+    "typing_speed": 45,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "git status",
+          "git pull origin main",
+          "dotnet build",
+          "dotnet test"
+        ]
+      },
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "npm install",
+          "npm run build",
+          "where node"
+        ]
+      },
+      {
+        "task"  : "WordDocument",
+        "input_file" : "content/if.txt",
+        "save_name" : "c:\\users\\dakota\\Documents\\release-notes.doc"
+      },
+      {
+        "task"  : "RunCommand",
+        "cmd" : [
+          "notepad"
+        ]
+      },
+      {
+        "task"  : "Browser",
+        "browser" : "chrome",
+        "urls" : [
+          "https://github.com/notifications",
+          "https://stackoverflow.com"
+        ]
+      },
+      {
+        "task"  : "Thunderbird",
+        "to" : "team@lab.local",
+        "subject" : "PR ready for review",
+        "body" : "Hi,\nThe feature branch is ready for review.\nCheers,\nDakota",
+        "send" : false
+      },
+      {
+        "task"  : "Clipboard",
+        "items" : [
+          "git checkout -b feature/login",
+          "export API_TOKEN=ghp_examplexxxx"
+        ]
+      }
+    ]
+  }
+}

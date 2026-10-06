@@ -21,26 +21,20 @@ ludus_sheepl_name: "{{ ludus_sheepl_npc_user | regex_replace('^.*\\\\', '') }}"
 
 # --- Sheepl runtime behaviour --------------------------------------------
 ludus_sheepl_profile: "ambient"         # bundled profile (one .json.j2 per name):
-                                        #   ambient        - generic benign on-host
-                                        #                    noise, the GHOSTS stand-in
-                                        #   phishing       - ambient + opens the newest
-                                        #                    intake doc (foothold)
+                                        #   ambient        - generic benign noise
+                                        #   phishing       - browse portal + open intake
                                         #   blue_team      - rich benign telemetry
-                                        #                    baseline (browsing, office
-                                        #                    shell, service/process
-                                        #                    queries) for defenders
-                                        #   red_team       - lateral RDP auth + explicit
-                                        #                    SMB creds + SPN/klist, so an
-                                        #                    operator finds cached creds
-                                        #                    and kerberoast context
-                                        #   responder_bait - name-resolution to a missing
-                                        #                    host (LLMNR/NBT-NS fallback)
-                                        #                    + SMB auth, for Responder /
-                                        #                    Inveigh / NTLM-relay labs
-                                        #   ad_user        - realistic domain usage
-                                        #                    (klist, SYSVOL/NETLOGON auth,
-                                        #                    gpupdate, nltest, LDAP) = live
-                                        #                    Kerberos/NTLM telemetry
+                                        #   red_team       - RDP + SMB creds + SPN/klist
+                                        #   responder_bait - LLMNR/NBT-NS poisoning bait
+                                        #   ad_user        - domain auth telemetry
+                                        #   analyst        - SOC: event logs, IOCs, KeePass
+                                        #   chief          - IT director: RDP + responder
+                                        #   developer      - dev: git, npm, Word, Clipboard
+                                        #   executive      - C-suite: news, Word, VLC
+                                        #   helpdesk       - tier-1: RDP subtasks, tickets
+                                        #   sysadmin       - domain admin: AD, SSH, KeePass
+                                        #   technician     - field tech: SSH, asset tracker
+                                        #   crossplatform  - general office productivity
 ludus_sheepl_total_time: "10m"          # window the task sequence is spread over
 ludus_sheepl_typing_speed: 50           # chars/min feel for typed content
 ludus_sheepl_loop: true                 # repeat the sequence so the NPC stays active
@@ -71,6 +65,19 @@ ludus_sheepl_bad_host: "fileserver01"
 ludus_sheepl_rdp_target: "10.{{ range_second_octet | default('2') }}.10.10"
 ludus_sheepl_rdp_user: "{{ ludus_sheepl_domain }}\\Administrator"
 ludus_sheepl_rdp_password: "changeme"
+
+# --- SSH scenario inputs (sysadmin, technician profiles) ------------------
+# PuttyConnection target for profiles that SSH into a Linux host. Defaults
+# to the DC/fileserver, but point it at an OT controller, historian, or
+# jump box when that generates more useful telemetry.
+ludus_sheepl_ssh_target: "{{ ludus_sheepl_fileserver }}"
+ludus_sheepl_ssh_user: "root"
+ludus_sheepl_ssh_password: "changeme"
+
+# --- KeePass scenario inputs (analyst, sysadmin profiles) ----------------
+# The NPC opens a KeePass vault on screen; the master password is typed live
+# and therefore harvestable via keylogging or memory scraping.
+ludus_sheepl_keepass_password: "MasterK3y!Vault"
 
 # --- AutoIT runtime (executes the generated .au3 on the victim) -----------
 ludus_sheepl_autoit_url: "https://www.autoitscript.com/files/autoit3/autoit-v3-setup.exe"

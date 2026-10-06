@@ -47,15 +47,21 @@ class SheeplConsole(MainConsole):
     Creates a person object
     """
 
-    def __init__(self, context, cl, tasks):
+    def __init__(self, context, cl, tasks, no_loop=False, no_tray=False, target="windows"):
         MainConsole.__init__(self, context)
 
         self.cl = cl
         self.tasks = tasks
-        self.loop = "True"
+        # looping is on by default unless --no_loop was passed on the CLI
+        self.loop = "False" if no_loop else "True"
         self.interactive = True
         # boolean to track whether currently creating a Sheepl
         self.birth = False
+        # --no_tray CLI override : suppresses the compiled script's tray icon
+        self.cli_no_tray = no_tray
+        # output target ('windows' AutoIT, or 'linux' xdotool)
+        self.target = target
+        self.file_ext = ".sh" if target == "linux" else ".au3"
         self.icon = False
 
         self.baseprompt = self.cl.yellow('>: ')
@@ -90,13 +96,11 @@ class SheeplConsole(MainConsole):
 
             # check to see if the file exists already from a previous Sheepl creation
             output_base = "output/"
-            file_name = name.replace(' ', '_')
-            file_name = name.lower() + '.au3'
-            file_name = output_base + file_name
+            file_name = output_base + name.lower().replace(' ', '_') + self.file_ext
             chk_file = Path(file_name)
 
             if chk_file.is_file():
-                print(self.cl.red("[!] The Sheepl output file '{}' already exists"))
+                print(self.cl.red("[!] The Sheepl output file '{}' already exists".format(file_name)))
                 self.replace_file = self.ask_yes_no_question("[?] Do you want to replace this? {}".format(self.cl.green("<yes> <no> : ")))
                 if self.replace_file == True:
                     print("[-] Removing file : {}".format(self.cl.yellow(file_name)))
@@ -119,10 +123,14 @@ class SheeplConsole(MainConsole):
 
         if self.birth:
             if task:
-                # need to add check for ^^ to see if this is in the list.
-                # BUG >> you can use task notexist
-                # prob best to refactor call so that you don't need to loop over everytime
-                # set to available_tasks = self.tasks.locate_available_tasks().items()
+                # validate that the requested task actually exists before trying
+                # to generate it; otherwise generate_task returns None and the
+                # subsequent AutoIT build calls crash
+                if task not in self.csh.task_list.values():
+                    print(self.cl.red("[!] <ERROR> '{}' is not an available task".format(task)))
+                    print("[?] You can list available tasks using the command 'list'")
+                    return
+
                 print(self.cl.yellow("[>] You have selected : " + task))
 
                 # requests the Sheepl Object Generates a task and returns it
@@ -206,7 +214,7 @@ class SheeplConsole(MainConsole):
         """
         print("------------------------------------------")
         print("""
-                      /\___
+                      /\\___
             @@@@@@@@@@@  O \\
         @@@@@@@@@@@@@@@____/--[ later ]
         @@@@@@@@@@@@@@@
@@ -247,7 +255,12 @@ class SheeplConsole(MainConsole):
 
         # Create the Sheepl Object - the 'self' has a 'csh' object
         # we are in interactive mode, so let's set that
-        self.csh = Sheepl(name, total_time, typing_speed, self.loop, self.cl, self.interactive)
+        self.csh = Sheepl(name, total_time, typing_speed, self.loop, self.cl, self.interactive, target=self.target)
+
+        # honour the --no_tray CLI override as the initial icon setting; the
+        # interactive 'icon' command can still change it afterwards
+        if self.cli_no_tray:
+            self.csh.icon = "False"
 
         # mark as born in both this console and Sheepl object
         self.birth = True

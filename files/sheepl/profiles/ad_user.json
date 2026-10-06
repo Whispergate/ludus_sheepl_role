@@ -1,0 +1,30 @@
+{
+  "sheepl": {
+    "name": "AD User",
+    "total_time": "10m",
+    "typing_speed": 50,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "klist",
+          "net use \\\\10.2.10.10\\NETLOGON",
+          "gpupdate /force",
+          "net group \"Domain Users\" /domain",
+          "net time /domain",
+          "nltest /dsgetdc:CORP"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "nltest /domain_trusts",
+          "([adsisearcher]'(objectclass=user)').FindAll().Count",
+          "klist"
+        ]
+      }
+    ]
+  }
+}

@@ -23,6 +23,7 @@ import random
 import textwrap
 
 from utils.base.base_cmd_class import BaseCMD
+from utils import primitives as P
 #from utils.typing import TypeWriter
 
 
@@ -116,7 +117,7 @@ class KeePass(BaseCMD):
 
 
     def do_database_location(self, location):
-        """
+        r"""
         Specifies the keepass location > database_location c:\path.to.keepass.db
         """
         if location:
@@ -144,7 +145,7 @@ class KeePass(BaseCMD):
                 print("[!] <ERROR> You need to supply the command for typing")
 
 
-    def do_show(self):
+    def do_show(self, arg):
         """
         Shows the current configured credentials
         """
@@ -200,17 +201,41 @@ class KeePass(BaseCMD):
 
     def create_autoit_function(self):
         """
-        Grabs all the output from the respective functions and builds the AutoIT output
+        Builds the ordered primitive list for this task and hands it to the
+        backend to render into the target automation language.
         """
 
-        autoIT_script = (
-            self.autoit_function_open() +
-            self.open_keepass() +
-            self.text_typing_block() +
-            self.close_keepass()
+        return self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
 
-        return autoIT_script
+
+    def build_primitives(self):
+        """
+        Expresses the KeePass interaction as OS-neutral primitives : launch the
+        database, wait for the open prompt, type the master password, then quit.
+        """
+
+        return [
+            P.Comment("Creates a KeePass Interaction"),
+            P.Comment("Sends path to the KeePass database on the local box"),
+            P.RunDialog(self.database_location),
+            P.Raw(self.rdp_focus_check("[CLASS:ConsoleWindowClass]")),
+            P.Comment("Keep Window Infocus - longer wait delay to let program catchup"),
+            P.WaitWindow("Open Database", 40),
+            P.FocusWindow("Open Database"),
+            P.Comment("open the database using the masterpassword"),
+            P.TypeText(self.masterpassword),
+            P.Sleep(15677),
+            P.FocusWindow("KeePass"),
+            P.Comment("exit via CTRL + q"),
+            P.SendKeys("^q"),
+            P.Comment("Reset Focus"),
+            P.ReleaseFocus(),
+        ]
 
 
     def parse_json_profile(self, **kwargs):
@@ -232,118 +257,13 @@ class KeePass(BaseCMD):
             print(f"[*] Setting the command attribute : {self.database_location}")
             print(f"[*] Setting the command attribute : {self.masterpassword}")
 
-        
-        except:
-            print(self.cl.red("[!] Error Setting JSON Profile attributes, check matching key values in the profile"))
+
+        except KeyError as missing_key:
+            print(self.cl.red("[!] Error Setting JSON Profile attributes : missing key {}".format(missing_key)))
 
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()
 
 
-    # --------------------------------------------------->
-    # Create Open Block
-
-
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-        when using textwrap.dedent you need to add in the backslash
-        to the start of the multiline
-        """
-
-        function_declaration = """
-        ; < --------------------------------- >
-        ;         KeePass Interaction
-        ; < --------------------------------- >
-
-        KeePass_{}()
-
-        """.format(str(self.csh.counter.current()))
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_keepass(self):
-        """
-        Creates the AutoIT Function Declaration Entry
-        """
-
-        """
-        # Note a weird bug that the enter needs to be
-        # passed as format string argument as escaping
-        # is ignored on a multiline for some reason
-        # if it gets sent as an individual line as in text_typing_block()
-        # >> typing_text += "Send('exit{ENTER}')"
-        # everything works. Strange, Invoke-OCD, and then stop caring
-        # and push it through the format string.
-
-        # Note > Send('yourprogram{ENTER}')
-        # Example : Send('powershell{ENTER}')
-        """
-
-        _open_keepass = """
-
-        Func KeePass_{}()
-
-            ; Creates a KeePass Interaction
-
-            Send("#r")
-            ; Wait 10 seconds for the Run dialogue window to appear.
-            WinWaitActive("Run", "", 10)
-            ; note this needs to be escaped
-            ; Sends path to Keepdatabase on local box
-            Send('{}{}')
-            ; check to see if we are already in an RDP session
-            $active_window = _WinAPI_GetClassName(WinGetHandle("[ACTIVE]"))
-            ConsoleWrite($active_window & @CRLF)
-            $inRDP = StringInStr($active_window, "TscShellContainerClass")
-            ; if the result is greater than 1 we are inside an RDP session
-            if $inRDP < 1 Then
-                WinWaitActive("[CLASS:ConsoleWindowClass]", "", 10)
-                SendKeepActive("[CLASS:ConsoleWindowClass]")
-            EndIf
-            ; Keep Window Infocus - longer wait delay to let program catchup
-            WinWaitActive('Open Database', "", 40)
-            SendKeepActive('Open Database')
-
-        """.format(str(self.csh.counter.current()),
-		                self.database_location,
-                        "{ENTER}",
-		                self.masterpassword
-		                )
-
-        return textwrap.dedent(_open_keepass)
-
-
-    def text_typing_block(self):
-        """
-        Takes the Typing Text Input
-        """
-	    # open the database using the masterpassword
-        typing_text = 'Send({})\n'.format(self.masterpassword)
-
-        # add in exit - this is achieved using CTRL + q
-        typing_text += 'Sleep(15677)\n'
-        typing_text += "SendKeepActive('KeePass')\n"
-        typing_text += 'Send("^q")\n'
-        typing_text += "; Reset Focus\n"
-        typing_text += 'SendKeepActive("")'
-
-        return textwrap.indent(typing_text, self.indent_space)
-
-
-    def close_keepass(self):
-
-        """
-        Closes the KeePass appliation function declaration
-        """
-
-        end_func = """
-
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)
 
    

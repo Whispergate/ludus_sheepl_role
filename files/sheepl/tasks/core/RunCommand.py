@@ -24,6 +24,7 @@ import textwrap
 
 # Sheepl Class Imports
 from utils.base.base_cmd_class import BaseCMD
+from utils import primitives as P
 
 
 class RunCommand(BaseCMD):
@@ -174,16 +175,29 @@ class RunCommand(BaseCMD):
 
     def create_autoit_function(self):
         """
-        Grabs all the output from the respective functions and builds the AutoIT output
+        Builds the ordered primitive list for this task and hands it to the
+        backend to render into the target automation language.
         """
 
-        autoIT_script = (
-            self.autoit_function_open() +
-            self.open_RunCommand() +
-            self.close_RunCommand()
+        return self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
 
-        return autoIT_script
+
+    def build_primitives(self):
+        """
+        Expresses the run-command interaction as OS-neutral primitives :
+        open the Run dialog with the command, then close the dialog.
+        """
+
+        return [
+            P.Comment("Creates a RunCommand Interaction"),
+            P.RunDialog(self.command),
+            P.CloseWindow("Run"),
+        ]
 
 
     def parse_json_profile(self, **kwargs):
@@ -208,79 +222,9 @@ class RunCommand(BaseCMD):
         # once these have all been set in here, then self.create_autoIT_block() gets called which pushes the task on the stack
         self.create_autoIT_block()
            
-    # --------------------------------------------------->
-    # Create Open Block
-
-
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-        when using textwrap.dedent you need to add in the backslash
-        to the start of the multiline
-        """
-
-        function_declaration = """
-        ; < ------------------------------------ >
-        ;         RunCommand Interaction
-        ; < ------------------------------------ >
-
-        """
-        if self.csh.creating_subtasks == False:
-            function_declaration += "RunCommand_{}()".format(str(self.csh.counter.current()))
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_RunCommand(self):
-        """
-        Creates the AutoIT Function Declaration Entry
-        """
-
-        """
-        # Note a weird bug that the enter needs to be
-        # passed as format string argument as escaping
-        # is ignored on a multiline for some reason
-        # if it gets sent as an individual line as in text_typing_block()
-        # >> typing_text += "Send('exit{ENTER}')"
-        # everything works. Strange, Invoke-OCD, and then stop caring
-        # and push it through the format string.
-
-        # Note > Send('yourprogram{ENTER}')
-        # Example : Send('powershell{ENTER}')
-        """
-
-        _open_runcommand = """
-
-        Func RunCommand_{}()
-
-            ; Creates a RunCommand Interaction
-
-            Send("#r")
-            ; Wait 10 seconds for the Run dialogue window to appear.
-            WinWaitActive("Run", "", 10)
-            ; note this needs to be escaped
-            Send('{}{}')
-
-            ; add in a check to see if a not found window appears
-
-
-        """.format(self.csh.counter.current(), self.command, '{ENTER}')
-
-        return textwrap.dedent(_open_runcommand)
 
 
 
-    def close_RunCommand(self):
-        """
-        Closes the RunCommand application function declaration
-        """
-
-        end_func = """
-	    WinClose("Run")
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)
+    # end of RunCommand
 
 

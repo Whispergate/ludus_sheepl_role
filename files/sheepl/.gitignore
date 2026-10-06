@@ -14,10 +14,13 @@ __pycache__/
 
 # ignore anything inside content
 content/*
+# ...but keep the one sample document shipped for the example technician profile
+!content/if.txt
 
 # ignore anythng inside output
 *.exe
 *.au3
+*.sh
 
 
 # vscode paths

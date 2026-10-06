@@ -1,0 +1,38 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": [
+          "{{ ludus_sheepl_intranet_url }}",
+          "https://www.wikipedia.org"
+        ]
+      },
+      {
+        "task": "LibreOfficeWriter",
+        "input_file": "content/if.txt",
+        "save_name": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\notes.odt") | tojson }}
+      },
+      {
+        "task": "LibreOfficeCalc",
+        "save_name": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\inventory.ods") | tojson }},
+        "rows": [
+          ["Host", "IP", "Status"],
+          ["web01", "10.0.0.11", "online"],
+          ["db01", "10.0.0.12", "online"],
+          ["bak01", "10.0.0.13", "offline"]
+        ]
+      },
+      {
+        "task": "VLC",
+        "media": "https://archive.org/download/sample/sample.mp4"
+      }
+    ]
+  }
+}

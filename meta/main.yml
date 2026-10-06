@@ -4,13 +4,14 @@ galaxy_info:
   namespace: whispergate
   role_name: ludus_sheepl_role
   description: >-
-    Deterministic, server-less NPC activity on a Windows VM via Sheepl
-    (Matt Lorentzen). A drop-in replacement for GHOSTS that also drives the
-    phishing foothold by having the NPC open documents from its intake folder.
-  license: MIT
+    Deterministic, server-less NPC activity on Windows and Linux VMs via Sheepl. 
+  license: BSD 2-Clause
   min_ansible_version: "2.14"
   platforms:
     - name: Windows
+      versions:
+        - all
+    - name: Linux
       versions:
         - all
   galaxy_tags:
@@ -19,4 +20,5 @@ galaxy_info:
     - npc
     - phishing
     - windows
+    - linux
 dependencies: []

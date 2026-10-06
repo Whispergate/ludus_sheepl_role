@@ -1,0 +1,49 @@
+{
+  "sheepl" :
+  {
+    "name": "Reed",
+    "total_time": "45m",
+    "typing_speed": 110,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "Browser",
+        "browser" : "default",
+        "urls" : [
+          "https://www.bbc.co.uk/news",
+          "https://www.linkedin.com"
+        ]
+      },
+      {
+        "task"  : "WordDocument",
+        "input_file" : "content/if.txt",
+        "save_name" : "c:\\users\\reed\\Documents\\board-memo.doc"
+      },
+      {
+        "task"  : "RunCommand",
+        "cmd" : [
+          "calc"
+        ]
+      },
+      {
+        "task"  : "Browser",
+        "browser" : "default",
+        "urls" : [
+          "https://outlook.office.com"
+        ]
+      },
+      {
+        "task"  : "Thunderbird",
+        "to" : "assistant@lab.local",
+        "subject" : "Board pack",
+        "body" : "Please circulate the attached board pack ahead of Thursday.",
+        "send" : false
+      },
+      {
+        "task"  : "VLC",
+        "media" : "https://archive.org/download/webinar/q3-briefing.mp4"
+      }
+    ]
+  }
+}

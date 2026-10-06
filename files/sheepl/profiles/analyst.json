@@ -1,0 +1,60 @@
+{
+  "sheepl" :
+  {
+    "name": "Harper",
+    "total_time": "25m",
+    "typing_speed": 60,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "Browser",
+        "browser" : "edge",
+        "urls" : [
+          "https://www.virustotal.com",
+          "https://otx.alienvault.com",
+          "https://urlscan.io"
+        ]
+      },
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "ipconfig /all",
+          "arp -a",
+          "nslookup example.com",
+          "tasklist /svc"
+        ]
+      },
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "Get-EventLog -LogName Security -Newest 20",
+          "Get-Process | Sort-Object CPU -Descending | Select-Object -First 10",
+          "Get-NetTCPConnection | Where-Object State -eq 'Established'"
+        ]
+      },
+      {
+        "task"  : "KeePass",
+        "database_location" : "c:\\users\\harper\\Documents\\analyst.kdbx",
+        "masterpassword" : "Tr0ub4dor&3"
+      },
+      {
+        "task"  : "Clipboard",
+        "items" : [
+          "IOC: 185.220.101.4 - suspected C2",
+          "hash: 44d88612fea8a8f36de82e1278abb02f",
+          "note: email \"security\" team re: phishing wave"
+        ]
+      },
+      {
+        "task"  : "LibreOfficeCalc",
+        "save_name" : "c:\\users\\harper\\Documents\\ioc-tracker.ods",
+        "rows" : [
+          ["Indicator", "Type", "Confidence"],
+          ["185.220.101.4", "ip", "high"],
+          ["44d88612fea8a8f36de82e1278abb02f", "md5", "medium"]
+        ]
+      }
+    ]
+  }
+}

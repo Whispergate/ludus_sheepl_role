@@ -24,6 +24,7 @@ import textwrap
 
 # Sheepl Class Imports
 from utils.base.base_cmd_class import BaseCMD
+from utils import primitives as P
 #from utils.typing import TypeWriter
 
 
@@ -164,17 +165,37 @@ class InternetExplorer(BaseCMD):
 
 
     def create_autoit_function(self):
-        """ 
-        Grabs all the output from the respective functions and builds the AutoIT output
+        """
+        Builds the ordered primitive list for this task and hands it to the
+        backend to render into the target automation language.
         """
 
-        autoIT_script = (
-            #self.func_dec() +
-            self.open_internetexplorer() +
-            self.close_internetExplorer()
+        return self.csh.backend.render_task(
+            self.taskname,
+            self.csh.counter.current(),
+            self.build_primitives(),
+            emit_call=(not self.csh.creating_subtasks),
         )
 
-        return autoIT_script
+
+    def build_primitives(self):
+        """
+        Expresses the (legacy) Internet Explorer interaction as primitives. The
+        _IECreate / _IEQuit COM-UDF calls have no OS-neutral form, so they are
+        emitted via Raw. IE is removed from Windows 11 : the modern replacement
+        is the Browser task.
+        """
+
+        return [
+            P.Comment("Creates an InternetExplorer Interaction"),
+            P.Raw('Local $oIE = _IECreate("{}",1,1,1)'.format(self.destination_url.replace('"', '""'))),
+            P.Sleep(2000),
+            P.Comment("this is where IE interaction such as logging in or spawning tabs would happen"),
+            P.Sleep(20000),
+            P.SendKeys("!{F4}"),
+            P.ReleaseFocus(),
+            P.Raw("_IEQuit($oIE)"),
+        ]
  
  
     def parse_json_profile(self, **kwargs):
@@ -197,113 +218,6 @@ class InternetExplorer(BaseCMD):
         self.create_autoIT_block()
 
 
-    # --------------------------------------------------->
-    # Create Open Block
-
-
-    def autoit_function_open(self):
-        """
-        Initial Entrypoint Definition for AutoIT function
-        when using textwrap.dedent you need to add in the backslash
-        to the start of the multiline
-        """
-
-        function_declaration = """
-        ; < ------------------------------------------ >
-        ;         InternetExplorer Interaction        
-        ; < ------------------------------------------ >
-
-        InternetExplorer_{}()
-        """.format(str(self.csh.counter.current()))
-
-        return textwrap.dedent(function_declaration)
-
-
-    def open_internetexplorer(self):
-        """
-        Creates the AutoIT Function Declaration Entry
-        """
-
-        """
-        # Note a weird bug that the enter needs to be 
-        # passed as format string argument as escaping
-        # is ignored on a multiline for some reason
-        # if it gets sent as an individual line as in text_typing_block()
-        # >> typing_text += "Send('exit{ENTER}')"
-        # everything works. Strange, Invoke-OCD, and then stop caring
-        # and push it through the format string.
-
-        # Note > Send('yourprogram{ENTER}')
-        # Example : Send('powershell{ENTER}')
-        """
-
-        _open_internetexplorer = """
-
-        Func InternetExplorer_{}()
-
-            ; Creates a InternetExplorer Interaction
-
-            Local $oIE = _IECreate("{}",1,1,1)
-            Sleep(2000)
-            ;WinWaitActive("Windows Internet Explorer")
-            ;SendKeepActive("Windows Internet Explorer")
-            ;WinSetState("Windows Internet Explorer","",@SW_MAXIMIZE)
-            ; hardcoded sleep for now
-            ; will convert to AutoIT random
-            ; this is also where the IE interaction such as logging in etc will happen,
-            ; spawning new tabs etc
-            ; prob need a call out function to trigger a subroutine
-            Sleep(20000)
-            Send("!{}")
-
-        """.format(str(self.csh.counter.current()),
-                    self.destination_url,
-                    "{F4}"
-                    )
-
-        return textwrap.dedent(_open_internetexplorer)   
-
-
-    # def text_typing_block(self):
-    #     """
-    #     Takes the Typing Text Input
-    #     """
-
-    #     typing_text = 'Send("")'
-    #     # now loop round the input_text
-    #     # represents how someone would use the enter key when typing
-
-
-    #     for command in self.commands:
-    #         # these are individual send commands so don't need to be wrapped in a block
-    #         typing_text += 'Send("' + command + '{ENTER}")'
-    #         command_delay = str(random.randint(2000, 20000))
-    #         typing_text += 'sleep(" + command_delay + ")'
-
-    #     # add in exit
-    #     typing_text += 'Send("exit{ENTER}")'
-    #     typing_text += "; Reset Focus"
-    #     typing_text += 'SendKeepActive("")'
-
-    #     return textwrap.indent(typing_text, self.indent_space)
-
-
-    def close_internetExplorer(self):
-
-        """
-        Closes the InternetExplorer appliation function declaration
-        """
-
-        end_func = """
-
-        SendKeepActive("")
-        _IEQuit($oIE)
-
-        EndFunc
-
-        """
-
-        return textwrap.dedent(end_func)
 
 
     

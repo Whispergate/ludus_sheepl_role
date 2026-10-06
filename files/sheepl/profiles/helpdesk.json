@@ -1,0 +1,68 @@
+{
+  "sheepl" :
+  {
+    "name": "Morgan",
+    "total_time": "20m",
+    "typing_speed": 70,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "net user",
+          "net group \"Domain Admins\" /domain",
+          "query user"
+        ]
+      },
+      {
+        "task"  : "RemoteDesktop",
+        "computer" : "10.10.10.25",
+        "username" : "helpdesk@lab.local",
+        "password" : "Helpd3sk!2024",
+        "subtasks" : [
+          {
+            "task" : "CommandShell",
+            "cmd" : [
+              "systeminfo",
+              "wmic qfe list brief",
+              "gpresult /r"
+            ]
+          },
+          {
+            "task" : "PowerShell",
+            "cmd" : [
+              "Get-Service | Where-Object Status -eq 'Stopped'",
+              "Restart-Service -Name Spooler"
+            ]
+          }
+        ]
+      },
+      {
+        "task"  : "RunCommand",
+        "cmd" : [
+          "compmgmt.msc"
+        ]
+      },
+      {
+        "task"  : "LibreOfficeWriter",
+        "input_file" : "content/if.txt",
+        "save_name" : "c:\\users\\morgan\\Documents\\incident-notes.odt"
+      },
+      {
+        "task"  : "Clipboard",
+        "items" : [
+          "reset token: HD-9932",
+          "KB article: how to remap a network drive"
+        ]
+      },
+      {
+        "task"  : "Thunderbird",
+        "to" : "user@lab.local",
+        "subject" : "RE: your support ticket",
+        "body" : "Hi,\nYour account has been unlocked. Please try signing in again.\nHelpdesk",
+        "send" : false
+      }
+    ]
+  }
+}

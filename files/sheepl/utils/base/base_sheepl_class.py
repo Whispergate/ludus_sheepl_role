@@ -23,6 +23,8 @@ import importlib
 # Sheepl Class Imports
 from utils.tasks import Tasks
 from utils.counter import Counter
+from utils.backends.autoit_backend import AutoItBackend
+from utils.backends.xdotool_backend import XdotoolBackend
 
 #######################################################################
 #   Sheepl Class
@@ -38,7 +40,7 @@ class Sheepl(object):
     #headers = .action_headers()
 
 
-    def __init__(self, name, total_time, type_speed, loop, cl, interactive):
+    def __init__(self, name, total_time, type_speed, loop, cl, interactive, target="windows"):
 
         self.name = name
         self.total_time = total_time
@@ -48,6 +50,14 @@ class Sheepl(object):
         self.interactive = interactive
         # boolean for JSON profile input
         self.json_parsing = False
+
+        # output backend : renders this Sheepl object into a target automation
+        # language. AutoIT (Windows) is the default; --target linux selects the
+        # xdotool backend.
+        if target == "linux":
+            self.backend = XdotoolBackend()
+        else:
+            self.backend = AutoItBackend()
         
         # needs to be a string for JSON
         self.icon = "True"
@@ -81,9 +91,7 @@ class Sheepl(object):
 
         # File setup
         self.output_base = "output/"
-        self.file_name = name.replace(' ', '_')
-        self.file_name = name.lower() + '.au3'
-        self.file_name = self.output_base + self.file_name
+        self.file_name = self.output_base + name.lower().replace(' ', '_') + self.backend.file_extension
 
         print("[>] Creating the file : {}".format(self.cl.red(self.file_name)))
         self.typing_speed = self._typing_speed(type_speed)
@@ -321,12 +329,14 @@ class Sheepl(object):
         milliseconds and seconds as needed
         """
         # sorts out time into milliseconds
-        if 'm' in self.total_time:
+        if self.total_time.endswith('m'):
             total_time = int(self.total_time.split('m')[0]) * (1000 * 60)
-        elif 'h' in self.total_time:
+        elif self.total_time.endswith('h'):
             total_time = int(self.total_time.split('h')[0]) * (1000 * 60 * 60)
+        elif self.total_time.endswith('d'):
+            total_time = int(self.total_time.split('d')[0]) * (1000 * 60 * 60 * 24)
         else:
-            # 1000 milliseconds to 1minute -> then to 1hour
+            # no recognised suffix : default to 1 hour
             total_time = (1000 * 60 * 60)
 
         total_tasks = len(self.tasks.keys())
@@ -425,62 +435,18 @@ class Sheepl(object):
 
     def write_file(self, file_name):
         """
-        Takes the time added to the object and splits this into sections
-        based on the length of the total tasks
-        Appends the task output to the file
+        Delegates assembly of the output to the configured backend and writes
+        the result to disk.
+
+        The backend renders this Sheepl object (its tasks, includes, timing and
+        loop settings) into the target automation language. The backend also
+        chooses the line ending : AutoIT keeps the platform default, while the
+        Linux backend forces LF so the bash script runs on Linux.
         """
 
         print("[>] Writing to file {}".format(self.cl.red(self.file_name)))
 
-        sleep_time_list = self.parse_time_values(self.total_time)
-        print("SLEEP TIMES ARE {}".format(sleep_time_list))
+        output = self.backend.assemble(self)
 
-        # creates the file write
-
-
-        with open(file_name, 'w') as of:
-            """
-            Queries task list, gets the key (assigned action) and then
-            writes the output to the file
-            also checks taks for specific headers first so that the are at the
-            top of the file
-            """
-
-            # need to always include the array library
-            # as this is always used.
-            #of.write('#include <Array.au3>\n')
-
-            # Sort out no tray icon unless option is chosen
-            if self.icon == "False":
-                of.write("#NoTrayIcon\n")
-
-            # add in other headers dependent on what has been assigned
-            for include_header in self.autoIT_UDF_includes:
-                of.write(include_header + '\n')
-
-            # Loop through header declarations
-
-            of.write(self.typing_speed)
-
-            # Gets the length of the total task keys() and the values of the tasks (ie the output)
-            # Grabs the total length of sleep
-
-            task_list_output, sleep_time_output = self.autoIT_start(
-                                                    len(self.tasks.keys()),
-                                                    self.tasks.keys(),
-                                                    len(sleep_time_list),
-                                                    sleep_time_list)
-
-            of.write(task_list_output)
-            of.write(sleep_time_output)
-
-            # write the Window Kill
-            of.write(textwrap.dedent(self._window_watcher()))
-
-            # setup the task looping - string returned by the function
-            of.write(textwrap.dedent(self.task_loop()))
-
-            # create the file
-            # now loop round for output
-            for task_output in self.tasks.values():
-                of.write(task_output)
+        with open(file_name, 'w', newline=self.backend.newline) as of:
+            of.write(output)

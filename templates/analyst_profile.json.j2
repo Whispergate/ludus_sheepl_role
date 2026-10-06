@@ -1,0 +1,58 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": [
+          "{{ ludus_sheepl_intranet_url }}",
+          "https://www.virustotal.com",
+          "https://otx.alienvault.com"
+        ]
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "ipconfig /all",
+          "arp -a",
+          "tasklist /svc"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "Get-EventLog -LogName Security -Newest 20",
+          "Get-Process | Sort-Object CPU -Descending | Select-Object -First 10",
+          "Get-NetTCPConnection | Where-Object State -eq 'Established'"
+        ]
+      },
+      {
+        "task": "KeePass",
+        "database_location": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\analyst.kdbx") | tojson }},
+        "masterpassword": {{ ludus_sheepl_keepass_password | tojson }}
+      },
+      {
+        "task": "Clipboard",
+        "items": [
+          "IOC: 185.220.101.4 - suspected C2",
+          "hash: 44d88612fea8a8f36de82e1278abb02f",
+          "note: email security team re: phishing wave"
+        ]
+      },
+      {
+        "task": "LibreOfficeCalc",
+        "save_name": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\ioc-tracker.ods") | tojson }},
+        "rows": [
+          ["Indicator", "Type", "Confidence"],
+          ["185.220.101.4", "ip", "high"],
+          ["44d88612fea8a8f36de82e1278abb02f", "md5", "medium"]
+        ]
+      }
+    ]
+  }
+}

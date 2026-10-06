@@ -34,7 +34,22 @@
         "computer" : "1.1.1.1",
         "username" : "user@domain",
         "password" : "######"
-        
+
+      },
+      {
+        "task"  : "Browser",
+        "browser" : "edge",
+        "urls" : [
+          "https://intranet.lab.local",
+          "https://portal.office.com"
+        ]
+      },
+      {
+        "task"  : "Clipboard",
+        "items" : [
+          "setspn -L svc_sql",
+          "note: rotate svc_sql SPN after migration"
+        ]
       }
     ]
   }

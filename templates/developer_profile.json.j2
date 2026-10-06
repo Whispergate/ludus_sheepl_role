@@ -1,0 +1,53 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "git status",
+          "git pull origin main",
+          "dotnet build",
+          "dotnet test"
+        ]
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "npm install",
+          "npm run build",
+          "where node"
+        ]
+      },
+      {
+        "task": "WordDocument",
+        "input_file": "content/if.txt",
+        "save_name": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\release-notes.doc") | tojson }}
+      },
+      {
+        "task": "RunCommand",
+        "cmd": ["notepad"]
+      },
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": [
+          "{{ ludus_sheepl_intranet_url }}",
+          "https://github.com/notifications",
+          "https://stackoverflow.com"
+        ]
+      },
+      {
+        "task": "Clipboard",
+        "items": [
+          "git checkout -b feature/login",
+          "export API_TOKEN=ghp_examplexxxx"
+        ]
+      }
+    ]
+  }
+}

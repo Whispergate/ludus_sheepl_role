@@ -20,7 +20,7 @@ class Profile(object):
     takes in colour object
     """
 
-    def __init__(self, cl, profile_file, tasks):
+    def __init__(self, cl, profile_file, tasks, no_loop=False, no_tray=False, target="windows"):
         self.cl = cl
         self.tasks = tasks
         # now parse the profile_file
@@ -34,21 +34,35 @@ class Profile(object):
         # return the parsed JSON profile
         self.profile = self.parse_profile_file(profile_file)
 
-        # create the filename
-        self.file_name = self.profile["name"].replace(' ', '_')
-        self.file_name = self.profile["name"].lower() + '.au3'
+        # a profile may name its own target; otherwise use the CLI --target
+        target = self.profile.get("target", target)
 
-        # self.csh = Sheepl(name, total_time, typing_speed, loop, self.cl) 
-        self.csh = Sheepl(self.profile["name"],     
+        # self.csh = Sheepl(name, total_time, typing_speed, loop, self.cl)
+        self.csh = Sheepl(self.profile["name"],
                             self.profile["total_time"],
-                            self.profile["typing_speed"], 
-                            self.profile["loop"], 
+                            self.profile["typing_speed"],
+                            self.profile["loop"],
                             cl,
-                            self.interactive)
+                            self.interactive,
+                            target=target)
+
+        # the backend sets the output file extension (.au3 or .sh)
+        self.file_name = self.csh.file_name
 
         # now trigger the self.csh.json_parsing and set to True
         # this gets checked in each task AutoIT build section
         self.csh.json_parsing = True
+
+        # honour the tray icon setting from the profile (defaults to shown).
+        # this was previously ignored, so a profile's "icon" value had no effect
+        self.csh.icon = str(self.profile.get("icon", "True"))
+
+        # CLI overrides : --no_tray forces the icon off and --no_loop forces a
+        # single run, regardless of the profile's own settings
+        if no_tray:
+            self.csh.icon = "False"
+        if no_loop:
+            self.csh.loop = "False"
 
 
         # create a list for base_class_names

@@ -1,0 +1,58 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "net user",
+          {{ ("net group \"Domain Admins\" /domain") | tojson }},
+          "query user"
+        ]
+      },
+      {
+        "task": "RemoteDesktop",
+        "computer": {{ ludus_sheepl_rdp_target | tojson }},
+        "username": {{ ludus_sheepl_rdp_user | tojson }},
+        "password": {{ ludus_sheepl_rdp_password | tojson }},
+        "subtasks": [
+          {
+            "task": "CommandShell",
+            "cmd": [
+              "systeminfo",
+              "wmic qfe list brief",
+              "gpresult /r"
+            ]
+          },
+          {
+            "task": "PowerShell",
+            "cmd": [
+              "Get-Service | Where-Object Status -eq 'Stopped'",
+              "Restart-Service -Name Spooler"
+            ]
+          }
+        ]
+      },
+      {
+        "task": "RunCommand",
+        "cmd": ["compmgmt.msc"]
+      },
+      {
+        "task": "LibreOfficeWriter",
+        "input_file": "content/if.txt",
+        "save_name": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\incident-notes.odt") | tojson }}
+      },
+      {
+        "task": "Clipboard",
+        "items": [
+          "reset token: HD-9932",
+          "KB article: how to remap a network drive"
+        ]
+      }
+    ]
+  }
+}

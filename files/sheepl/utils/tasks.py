@@ -53,11 +53,17 @@ class Tasks(object):
         """
 
         tasks = {}
-       
+
         for category in self.tasks_root.iterdir():
-            for task in category.glob('*.py'): 
+            # skip anything that isn't a category directory (e.g. stray files)
+            if not category.is_dir():
+                continue
+            for task in category.glob('*.py'):
+                # skip package/helper files such as __init__.py
+                if task.stem.startswith('_'):
+                    continue
                 module_import_path = 'tasks.' + category.name + '.' + task.stem
-                tasks[module_import_path] = task.stem 
+                tasks[module_import_path] = task.stem
 
         return tasks
 
@@ -70,8 +76,8 @@ class Tasks(object):
             task_module = importlib.import_module(module_import_path)
             self.class_start = getattr(task_module, module)
 
-        except:
-            print("Error importing module")
+        except (ImportError, AttributeError) as err:
+            print("[!] Error importing module '{}' : {}".format(module_import_path, err))
 
         return self.class_start
 

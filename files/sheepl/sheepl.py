@@ -54,7 +54,7 @@ def signal_handler(sig, frame):
     print("[!] Exiting Sheepl")
     print("[<] ------------------------------------------ [>]")
     print("""
-               /\___
+               /\\___
     @@@@@@@@@@@  O  \\
  @@@@@@@@@@@@@@@____/--[ later ]
  @@@@@@@@@@@@@@@
@@ -75,9 +75,10 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Creating realistic user behaviour for tradecraft emulation.")
     main_parser = parser.add_argument_group('Main Program', 'Core Program Settings')
     main_parser.add_argument("--interactive", action="store_true", default=False, help="Launches an interactive console making it easier to create complex sequences")
-    main_parser.add_argument("--loop", action="store_false", help="Loops the program based around the total_time, will create actions and then repeat", default=True)
+    main_parser.add_argument("--no_loop", action="store_true", help="Disables task looping so the task list runs once instead of repeating <boolean> : defaults to False", default=False)
     main_parser.add_argument("--no_colour", action="store_false", help="Colours the output in the terminal <boolean> : defaults to True", default=True)
-    main_parser.add_argument("--no_tray", action="store_true", help="Removes compiled script tray icon", default=False)
+    main_parser.add_argument("--no_tray", action="store_true", help="Removes compiled script tray icon <boolean> : defaults to False", default=False)
+    main_parser.add_argument("--target", choices=["windows", "linux"], default="windows", help="Output target : 'windows' (AutoIT .au3, default) or 'linux' (xdotool bash .sh)")
 
     # Profiles Options
     profile_group = parser.add_argument_group('Profiles', 'Creates Sheepl files from JSON format files')
@@ -106,6 +107,15 @@ def parse_arguments():
 
 
 def main():
+    # The banner and later output use Unicode box-drawing characters which
+    # crash on a legacy Windows console (cp1252). Reconfigure the streams to
+    # UTF-8 where supported; fall back silently on older/!reconfigurable streams.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except (AttributeError, ValueError):
+            pass
+
     banner("2.3")
     # hr = "------------------------------------"
     # counter below needs to be added as part of the Sheepl Object
@@ -131,7 +141,7 @@ def main():
     if args.interactive:
         interactive = True
         context = ConsoleContext()
-        con = SheeplConsole(context, cl, tasks)
+        con = SheeplConsole(context, cl, tasks, no_loop=args.no_loop, no_tray=args.no_tray, target=args.target)
         con.cmdloop()
 
 
@@ -174,7 +184,7 @@ def main():
         print("[!] Create a sheepl from the profile file : {}".format(cl.green(args.profile.name)))
         # Set Interactive to False
         interactive = False
-        Profile(cl, args.profile.name, tasks)
+        Profile(cl, args.profile.name, tasks, no_loop=args.no_loop, no_tray=args.no_tray, target=args.target)
 
 
 if __name__ == '__main__':

@@ -225,7 +225,7 @@ class CreateTemplate(object):
             # self.subtask_supported = True
 
             # empty subtask dictionary to hold assigned tasks
-            # self.subtasks = \{\}
+            # self.subtasks = {}
         """
 
         return textwrap.indent(textwrap.dedent(class_internals), self.indent_space)

@@ -1,0 +1,43 @@
+{
+  "sheepl": {
+    "name": "Red Team",
+    "total_time": "10m",
+    "typing_speed": 50,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "cmdkey /list",
+          "net use \\\\10.2.10.10\\NETLOGON changeme /user:CORP\\Administrator",
+          "klist",
+          "setspn -Q */*"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "cmdkey /list",
+          "Get-SmbConnection"
+        ]
+      },
+      {
+        "task": "RemoteDesktop",
+        "computer": "10.2.10.10",
+        "username": "CORP\\Administrator",
+        "password": "changeme",
+        "subtasks": [
+          {
+            "task": "CommandShell",
+            "cmd": [
+              "whoami /all",
+              "hostname",
+              "net use"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

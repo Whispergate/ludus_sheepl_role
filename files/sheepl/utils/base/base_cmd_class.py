@@ -4,7 +4,8 @@ Purely for inheritance
 
 Pushes the common menu functionality such as back and discard into this class
 
-    # TODO - sort out the issue of not repeating the last commmand on enter in CMD
+Note : pressing enter on an empty line is a no-op (see emptyline below), which
+stops cmd from repeating the previous command as it does by default.
 """
 
 
@@ -13,6 +14,7 @@ __license__ = "MIT"
 
 
 import cmd
+import textwrap
 
 try:
     import readline
@@ -72,6 +74,8 @@ class BaseCMD(cmd.Cmd):
 
 
     def emptyline(self):
+        # override cmd's default, which repeats the last command on a blank
+        # line; here a blank line simply does nothing
         pass
 
 
@@ -166,6 +170,58 @@ class BaseCMD(cmd.Cmd):
                 return False
 
 
+    @staticmethod
+    def escape_autoit_send(text):
+        """
+        Escapes a user-supplied string so it is sent literally by AutoIT's
+        Send() function.
+
+        AutoIT treats ! + ^ # and { } as special characters inside Send(), and
+        a double quote terminates the surrounding AutoIT string literal. Without
+        escaping, a command, URL or password containing any of these produces a
+        broken script or unintended keystrokes (for example '!' fires ALT).
+
+        The escaping is done in a single pass so that the braces added around
+        the other special characters are not themselves re-escaped.
+        """
+        if not isinstance(text, str):
+            return text
+
+        mapping = {
+            '{': '{{}',
+            '}': '{}}',
+            '!': '{!}',
+            '+': '{+}',
+            '^': '{^}',
+            '#': '{#}',
+        }
+        escaped = ''.join(mapping.get(char, char) for char in text)
+        # double quotes are escaped by doubling inside an AutoIT string literal
+        escaped = escaped.replace('"', '""')
+        return escaped
+
+
+    @staticmethod
+    def rdp_focus_check(window_spec):
+        """
+        Backend-specific (AutoIT) snippet, emitted by shell-style tasks via a
+        Raw primitive : if the active window is an RDP session, keep input
+        focused on the launched window (identified by window_spec) inside it.
+        Shared here because CommandShell, PowerShell and KeePass all use it.
+        There is no OS-neutral equivalent, which is why it is a Raw snippet.
+        """
+        return textwrap.dedent("""\
+            ; check to see if we are already in an RDP session
+            $active_window = _WinAPI_GetClassName(WinGetHandle("[ACTIVE]"))
+            ConsoleWrite($active_window & @CRLF)
+            $inRDP = StringInStr($active_window, "TscShellContainerClass")
+            ; if the result is greater than 1 we are inside an RDP session
+            if $inRDP < 1 Then
+                WinWaitActive("{spec}", "", 10)
+                SendKeepActive("{spec}")
+            EndIf""".format(spec=window_spec))
+
+
     def active_task(self, active_task):
         """
         Helper to check whether task has started or not
@@ -241,7 +297,7 @@ class SubTaskCMD(BaseCMD):
         self.prompt = self.prompt[:-1] + " subtask :>"
 
 
-    def do_subtasks_complete(self):
+    def do_subtasks_complete(self, arg):
         """
         Adds in menu option for subtasking
         """

@@ -1,0 +1,56 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "Get-ADUser -Filter * -Properties LastLogonDate | Select-Object Name,LastLogonDate",
+          "Get-ADComputer -Filter * | Measure-Object",
+          {{ ("Get-ADGroupMember -Identity 'Domain Admins'") | tojson }}
+        ]
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          {{ ("nltest /dclist:" ~ ludus_sheepl_domain ~ ".local") | tojson }},
+          "net accounts /domain",
+          "dsquery user -limit 5"
+        ]
+      },
+      {
+        "task": "PuttyConnection",
+        "computer": {{ ludus_sheepl_ssh_target | tojson }},
+        "username": {{ ludus_sheepl_ssh_user | tojson }},
+        "password": {{ ludus_sheepl_ssh_password | tojson }},
+        "cmd": [
+          "df -h",
+          "systemctl status sshd",
+          "tail -n 50 /var/log/auth.log"
+        ]
+      },
+      {
+        "task": "KeePass",
+        "database_location": {{ ("c:\\users\\" ~ ludus_sheepl_name ~ "\\Documents\\domain-creds.kdbx") | tojson }},
+        "masterpassword": {{ ludus_sheepl_keepass_password | tojson }}
+      },
+      {
+        "task": "Clipboard",
+        "clear": true,
+        "items": [
+          "svc_backup : B@ckup#Svc!2026",
+          "da_recovery_key: 7f3a-99c1-20bd-4e5a"
+        ]
+      },
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": ["{{ ludus_sheepl_intranet_url }}"]
+      }
+    ]
+  }
+}

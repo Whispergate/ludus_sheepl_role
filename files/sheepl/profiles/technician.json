@@ -37,6 +37,22 @@
           "uname -a",
           "find / -type f -name '*.txt' -exec grep -i 'pass' {} \\;"
         ]
+      },
+      {
+        "task"  : "Clipboard",
+        "items" : [
+          "ticket #4471 - printer offline",
+          "asset tag: LT-00912"
+        ]
+      },
+      {
+        "task"  : "LibreOfficeCalc",
+        "save_name" : "c:\\users\\matt\\Desktop\\asset-audit.ods",
+        "rows" : [
+          ["Asset", "User", "Status"],
+          ["LT-00912", "jdoe", "in repair"],
+          ["DT-00455", "asmith", "active"]
+        ]
       }
     ]
   }

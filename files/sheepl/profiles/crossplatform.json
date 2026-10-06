@@ -1,0 +1,46 @@
+{
+  "sheepl" :
+  {
+    "name": "Robin",
+    "total_time": "40m",
+    "typing_speed": 50,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "Browser",
+        "browser" : "firefox",
+        "urls" : [
+          "https://www.wikipedia.org",
+          "https://news.ycombinator.com"
+        ]
+      },
+      {
+        "task"  : "Thunderbird",
+        "to" : "team@lab.local",
+        "subject" : "Project update",
+        "body" : "Hi all,\nThe migration is on track for Friday.\nThanks,\nRobin",
+        "send" : false
+      },
+      {
+        "task"  : "LibreOfficeWriter",
+        "input_file" : "content/if.txt",
+        "save_name" : "c:\\users\\robin\\Documents\\notes.odt"
+      },
+      {
+        "task"  : "LibreOfficeCalc",
+        "save_name" : "c:\\users\\robin\\Documents\\inventory.ods",
+        "rows" : [
+          ["Host", "IP", "Status"],
+          ["web01", "10.0.0.11", "online"],
+          ["db01", "10.0.0.12", "online"],
+          ["bak01", "10.0.0.13", "offline"]
+        ]
+      },
+      {
+        "task"  : "VLC",
+        "media" : "https://archive.org/download/sample/sample.mp4"
+      }
+    ]
+  }
+}

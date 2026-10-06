@@ -1,0 +1,51 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "ipconfig /all",
+          "whoami /groups",
+          "netstat -anto",
+          "setspn /Q http/*"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "$PSVersionTable",
+          "Get-Service | Where-Object {$_.Status -eq 'Running'}"
+        ]
+      },
+      {
+        "task": "RunCommand",
+        "cmd": [
+          {{ ("\\\\" ~ ludus_sheepl_bad_host) | tojson }}
+        ]
+      },
+      {
+        "task": "RemoteDesktop",
+        "computer": {{ ludus_sheepl_rdp_target | tojson }},
+        "username": {{ ludus_sheepl_rdp_user | tojson }},
+        "password": {{ ludus_sheepl_rdp_password | tojson }}
+      },
+      {
+        "task": "Browser",
+        "browser": "edge",
+        "urls": ["{{ ludus_sheepl_intranet_url }}", "{{ ludus_sheepl_portal_url }}"]
+      },
+      {
+        "task": "Clipboard",
+        "items": [
+          {{ ("setspn -L svc_sql") | tojson }},
+          "note: rotate service SPNs after migration"
+        ]
+      }
+    ]
+  }
+}
