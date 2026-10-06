@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  author: SectorNine
-  namespace: sectornine
+  author: Whispergate
+  namespace: whispergate
   role_name: ludus_sheepl_role
   description: >-
     Deterministic, server-less NPC activity on a Windows VM via Sheepl
