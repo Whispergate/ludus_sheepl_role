@@ -1,0 +1,44 @@
+{
+  "sheepl" :
+  {
+    "name": "Stoke",
+    "total_time": "3m",
+    "typing_speed": 55,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      { 
+        "task"  : "RemoteDesktop",
+        "computer" : "1.1.1.1",
+        "username" : "user@domain",
+        "password" : "######",
+        "subtasks" : [
+            {
+              "task" : "PowerShell",
+              "cmd" : [
+                "write-host 'I am a subtask'",
+                "gwmi win32_bios",
+                "ls",
+                "$psversiontable"
+              ]
+            },
+            {
+              "task" : "CommandShell",
+              "cmd" : [
+                "netstat -atno",
+                "hostname",
+                "systeminfo"
+              ]
+            }
+          ]
+      },
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "gwmi win32_service",
+          "ls c:\\"
+        ]
+      }
+    ]
+  }
+}

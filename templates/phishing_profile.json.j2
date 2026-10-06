@@ -1,0 +1,25 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "InternetExplorer",
+        "destination_url": "{{ ludus_sheepl_portal_url }}"
+      },
+      {
+        "task": "InternetExplorer",
+        "destination_url": "{{ ludus_sheepl_intranet_url }}"
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File C:/ProgramData/Sheepl/open_intake.ps1"
+        ]
+      }
+    ]
+  }
+}

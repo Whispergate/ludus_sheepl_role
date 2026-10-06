@@ -1,0 +1,104 @@
+---
+# ludus_sheepl_role - generate a Sheepl activity script and run it as the NPC.
+#
+# Sheepl (python3) turns a JSON profile into an AutoIT script. The victim is
+# Windows and need not have python, so the script is generated on the Ansible
+# control node (delegate_to: localhost) from the vendored toolkit, then shipped
+# to the target and run under the AutoIT runtime as the autologon NPC.
+
+- name: ludus_sheepl_role (Windows NPC only)
+  when: ansible_os_family == "Windows"
+  block:
+
+    # --- 1. Generate the AutoIT activity script on the control node ---------
+    - name: Stage the Sheepl toolkit on the control node
+      ansible.builtin.copy:
+        src: sheepl/
+        dest: "{{ _sheepl_ctl_dir }}/"
+        mode: "0755"
+      delegate_to: localhost
+
+    - name: Render the {{ ludus_sheepl_profile }} Sheepl profile
+      ansible.builtin.template:
+        src: "{{ ludus_sheepl_profile }}_profile.json.j2"
+        dest: "{{ _sheepl_ctl_dir }}/profiles/{{ _sheepl_profile_name }}.json"
+        mode: "0644"
+      delegate_to: localhost
+
+    - name: Generate the AutoIT activity script with Sheepl
+      ansible.builtin.command:
+        cmd: "python3 sheepl.py --profile profiles/{{ _sheepl_profile_name }}.json"
+        chdir: "{{ _sheepl_ctl_dir }}"
+      delegate_to: localhost
+      changed_when: true
+
+    - name: Confirm the activity script was produced
+      ansible.builtin.stat:
+        path: "{{ _sheepl_au3_ctl_path }}"
+      register: _sheepl_au3
+      delegate_to: localhost
+      failed_when: not _sheepl_au3.stat.exists
+
+    # --- 2. Install the AutoIT runtime on the victim (only if missing) -------
+    - name: Check for the AutoIT runtime
+      ansible.windows.win_stat:
+        path: "{{ ludus_sheepl_autoit_exe }}"
+      register: _sheepl_autoit_installed
+
+    - name: Install the AutoIT runtime
+      when: not _sheepl_autoit_installed.stat.exists
+      block:
+        - name: Download the AutoIT installer
+          ansible.windows.win_get_url:
+            url: "{{ ludus_sheepl_autoit_url }}"
+            dest: C:\Windows\Temp\autoit-setup.exe
+          register: _sheepl_autoit_dl
+          until: _sheepl_autoit_dl is succeeded
+          retries: 3
+          delay: 10
+
+        - name: Silent-install AutoIT
+          ansible.windows.win_command: C:\Windows\Temp\autoit-setup.exe /S
+          register: _sheepl_autoit_setup
+          failed_when: _sheepl_autoit_setup.rc not in [0, 3010]
+
+    # --- 3. Deploy the activity script + intake handler to the victim -------
+    - name: Ensure the Sheepl directory exists
+      ansible.windows.win_file:
+        path: "{{ ludus_sheepl_install_dir }}"
+        state: directory
+
+    - name: Copy the generated activity script
+      ansible.windows.win_copy:
+        src: "{{ _sheepl_au3_ctl_path }}"
+        dest: "{{ ludus_sheepl_install_dir }}\\activity.au3"
+
+    - name: Copy the phishing intake handler
+      ansible.windows.win_copy:
+        src: open_intake.ps1
+        dest: "{{ ludus_sheepl_install_dir }}\\open_intake.ps1"
+
+    # --- 4. Run the activity as the NPC at logon ----------------------------
+    # interactive_token = runs inside the NPC's own logon session with no stored
+    # password; the VM must autologon this user for the trigger to fire.
+    - name: Install the Sheepl activity scheduled task (runs as the NPC)
+      community.windows.win_scheduled_task:
+        name: "{{ ludus_sheepl_task_name }}"
+        description: "Sheepl NPC activity for {{ ludus_sheepl_name }}"
+        username: "{{ ludus_sheepl_npc_user }}"
+        logon_type: interactive_token
+        run_level: limited
+        actions:
+          - path: "{{ ludus_sheepl_autoit_exe }}"
+            arguments: "{{ ludus_sheepl_install_dir }}\\activity.au3"
+        triggers:
+          - type: logon
+            delay: "PT{{ ludus_sheepl_logon_delay_minutes | int }}M"
+        state: present
+        enabled: true
+
+  vars:
+    _sheepl_ctl_dir: "/tmp/sheepl-{{ inventory_hostname }}"
+    _sheepl_profile_name: "{{ ludus_sheepl_name | lower }}_{{ ludus_sheepl_profile }}"
+    # Sheepl names the output file after the profile "name" key, lowercased.
+    _sheepl_au3_ctl_path: "/tmp/sheepl-{{ inventory_hostname }}/output/{{ ludus_sheepl_name | lower }}.au3"

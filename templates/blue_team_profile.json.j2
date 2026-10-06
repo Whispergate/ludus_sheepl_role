@@ -1,0 +1,37 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "InternetExplorer",
+        "destination_url": "{{ ludus_sheepl_intranet_url }}"
+      },
+      {
+        "task": "InternetExplorer",
+        "destination_url": "{{ ludus_sheepl_portal_url }}"
+      },
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "whoami /all",
+          "ipconfig /all",
+          "net time",
+          "tasklist",
+          "dir %USERPROFILE%\\Documents"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "Get-Service | Where-Object {$_.Status -eq 'Running'}",
+          "Get-Process | Select-Object -First 10",
+          "Get-ChildItem C:\\"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "sheepl" :
+  {
+    "name": "Scribe",
+    "total_time": "14m",
+    "typing_speed": 85,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "ipconfig /all",
+          "whoami /groups",
+          "netstat -anto"
+        ]    
+      },
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "gwmi win32_service",
+          "$psversiontable"
+        ]
+      },
+      {
+        "task"  : "WordDocument",
+        "input_file" : "content/if.txt",
+        "save_name" : "c:\\users\\matt\\Desktop\\if123.doc"
+      },
+      {
+        "task"  : "PuttyConnection",
+        "computer" : "192.168.1.1",
+        "username" : "admin",
+        "password" : "S3cre3tP@44w0rd!",
+        "cmd" : [
+          "ifconfig",
+          "uname -a",
+          "find / -type f -name '*.txt' -exec grep -i 'pass' {} \\;"
+        ]
+      }
+    ]
+  }
+}

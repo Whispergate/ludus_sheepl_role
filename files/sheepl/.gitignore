@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+# au3 files
+*.au3
+
+# any content
+*.txt
+*.doc
+*.docx
+
+# ignore anything inside content
+content/*
+
+# ignore anythng inside output
+*.exe
+*.au3
+
+
+# vscode paths
+.vscode/
+.vscode/settings.json
+
+# DSStore Paths
+.DS_Store
+
+
+# GUI
+# testing
+gui/
+
+
+# testing for new typewriter class
+tasks/typing/

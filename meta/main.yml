@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: SectorNine
+  namespace: sectornine
+  role_name: ludus_sheepl_role
+  description: >-
+    Deterministic, server-less NPC activity on a Windows VM via Sheepl
+    (Matt Lorentzen). A drop-in replacement for GHOSTS that also drives the
+    phishing foothold by having the NPC open documents from its intake folder.
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Windows
+      versions:
+        - all
+  galaxy_tags:
+    - ludus
+    - sheepl
+    - npc
+    - phishing
+    - windows
+dependencies: []

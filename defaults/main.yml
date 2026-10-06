@@ -1,0 +1,82 @@
+---
+# ludus_sheepl_role - deterministic, server-less NPC activity on a Windows VM.
+#
+# Sheepl (Matt Lorentzen, github.com/lorentzenman/sheepl) emulates realistic user behaviour by generating an AutoIT
+# script from a JSON profile; the script is run AS the NPC/victim user and walks
+# a randomised sequence of benign tasks (browsing, office work, shell) over a
+# time window. Unlike GHOSTS there is no central server to deploy or keep
+# healthy - each endpoint carries its own self-contained activity script.
+#
+# The activity doubles as the deterministic phishing foothold: the NPC
+# periodically opens whatever document has landed in its intake folder, so an
+# attacker-submitted lure executes in the NPC's own session.
+
+# --- NPC identity ---------------------------------------------------------
+# The interactive user whose session runs the activity. MUST be the VM's
+# autologon user: the scheduled task uses an interactive-token logon trigger
+# (no stored password), so it only fires inside that user's live session.
+ludus_sheepl_npc_user: "{{ autologon_user | default('Administrator') }}"
+# Short (sAMAccountName) form used for the Sheepl name and intake path.
+ludus_sheepl_name: "{{ ludus_sheepl_npc_user | regex_replace('^.*\\\\', '') }}"
+
+# --- Sheepl runtime behaviour --------------------------------------------
+ludus_sheepl_profile: "ambient"         # bundled profile (one .json.j2 per name):
+                                        #   ambient        - generic benign on-host
+                                        #                    noise, the GHOSTS stand-in
+                                        #   phishing       - ambient + opens the newest
+                                        #                    intake doc (foothold)
+                                        #   blue_team      - rich benign telemetry
+                                        #                    baseline (browsing, office
+                                        #                    shell, service/process
+                                        #                    queries) for defenders
+                                        #   red_team       - lateral RDP auth + explicit
+                                        #                    SMB creds + SPN/klist, so an
+                                        #                    operator finds cached creds
+                                        #                    and kerberoast context
+                                        #   responder_bait - name-resolution to a missing
+                                        #                    host (LLMNR/NBT-NS fallback)
+                                        #                    + SMB auth, for Responder /
+                                        #                    Inveigh / NTLM-relay labs
+                                        #   ad_user        - realistic domain usage
+                                        #                    (klist, SYSVOL/NETLOGON auth,
+                                        #                    gpupdate, nltest, LDAP) = live
+                                        #                    Kerberos/NTLM telemetry
+ludus_sheepl_total_time: "10m"          # window the task sequence is spread over
+ludus_sheepl_typing_speed: 50           # chars/min feel for typed content
+ludus_sheepl_loop: true                 # repeat the sequence so the NPC stays active
+ludus_sheepl_tray_icon: false           # hide the AutoIT systray icon
+
+# --- Phishing scenario inputs (consumed by phishing_profile.json.j2) ------
+# The document-intake / vendor portal the NPC "checks", the corporate intranet
+# it browses, and the folder it opens submitted documents from (the foothold).
+ludus_sheepl_portal_url: "http://10.{{ range_second_octet | default('2') }}.10.40/vendor-portal"
+ludus_sheepl_intranet_url: "http://10.{{ range_second_octet | default('2') }}.10.10"
+ludus_sheepl_intake_dir: "C:\\Users\\{{ ludus_sheepl_name }}\\Downloads"
+
+# --- AD / network scenario inputs (red_team, blue_team, responder_bait, ad_user) ---
+# Short domain name used by the net/nltest/klist commands. Override per lab.
+ludus_sheepl_domain: "CORP"
+# A real, reachable SMB host + share the NPC authenticates to. NETLOGON is readable
+# by any domain user and always exists on a DC, so it drives clean Kerberos/NTLM
+# telemetry without extra setup. Point at the lab's DC/file server.
+ludus_sheepl_fileserver: "10.{{ range_second_octet | default('2') }}.10.10"
+ludus_sheepl_share: "NETLOGON"
+# A hostname that does NOT resolve. The lookup falls back to LLMNR/NBT-NS broadcast,
+# which Responder/Inveigh can answer and poison (responder_bait profile).
+ludus_sheepl_bad_host: "fileserver01"
+# RemoteDesktop target for the red_team profile. The NPC types these creds into
+# mstsc, so they land in the host's credential stores / the target's logon history
+# (harvestable). Set real lab creds; placeholders still generate logon-attempt
+# telemetry (failed-logon 4625) which is itself useful.
+ludus_sheepl_rdp_target: "10.{{ range_second_octet | default('2') }}.10.10"
+ludus_sheepl_rdp_user: "{{ ludus_sheepl_domain }}\\Administrator"
+ludus_sheepl_rdp_password: "changeme"
+
+# --- AutoIT runtime (executes the generated .au3 on the victim) -----------
+ludus_sheepl_autoit_url: "https://www.autoitscript.com/files/autoit3/autoit-v3-setup.exe"
+ludus_sheepl_autoit_exe: "C:\\Program Files (x86)\\AutoIt3\\AutoIt3.exe"
+
+# --- Scheduled task -------------------------------------------------------
+ludus_sheepl_task_name: "SheeplActivity"
+ludus_sheepl_logon_delay_minutes: 1
+ludus_sheepl_install_dir: "C:\\ProgramData\\Sheepl"

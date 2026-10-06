@@ -1,0 +1,41 @@
+{
+  "sheepl" :
+  {
+    "name": "Saint",
+    "total_time": "16m",
+    "typing_speed": 85,
+    "loop": "True",
+    "icon": "False",
+    "tasks": [
+      {
+        "task"  : "CommandShell",
+        "cmd" : [
+          "ipconfig /all",
+          "whoami /groups",
+          "netstat -anto",
+          "setspn /Q http/*"
+        ]    
+      },
+      {
+        "task"  : "PowerShell",
+        "cmd" : [
+          "$psversiontable",
+          "get-service | ? {$_.State -eq 'Running'"
+        ]
+      },
+      {
+        "task"  : "RunCommand",
+        "cmd" : [
+          "\\\\servernothere"
+        ]
+      },
+      { 
+        "task"  : "RemoteDesktop",
+        "computer" : "1.1.1.1",
+        "username" : "user@domain",
+        "password" : "######"
+        
+      }
+    ]
+  }
+}

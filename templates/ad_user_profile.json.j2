@@ -1,0 +1,30 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          "klist",
+          "net use \\\\{{ ludus_sheepl_fileserver }}\\{{ ludus_sheepl_share }}",
+          "gpupdate /force",
+          "net group \"Domain Users\" /domain",
+          "net time /domain",
+          "nltest /dsgetdc:{{ ludus_sheepl_domain }}"
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          "nltest /domain_trusts",
+          "([adsisearcher]'(objectclass=user)').FindAll().Count",
+          "klist"
+        ]
+      }
+    ]
+  }
+}

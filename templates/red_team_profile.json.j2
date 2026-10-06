@@ -1,0 +1,43 @@
+{
+  "sheepl": {
+    "name": "{{ ludus_sheepl_name }}",
+    "total_time": "{{ ludus_sheepl_total_time }}",
+    "typing_speed": {{ ludus_sheepl_typing_speed }},
+    "loop": "{{ 'True' if ludus_sheepl_loop else 'False' }}",
+    "icon": "{{ 'True' if ludus_sheepl_tray_icon else 'False' }}",
+    "tasks": [
+      {
+        "task": "CommandShell",
+        "cmd": [
+          {{ "cmdkey /list" | tojson }},
+          {{ ("net use \\\\" ~ ludus_sheepl_fileserver ~ "\\" ~ ludus_sheepl_share ~ " " ~ ludus_sheepl_rdp_password ~ " /user:" ~ ludus_sheepl_rdp_user) | tojson }},
+          {{ "klist" | tojson }},
+          {{ "setspn -Q */*" | tojson }}
+        ]
+      },
+      {
+        "task": "PowerShell",
+        "cmd": [
+          {{ "cmdkey /list" | tojson }},
+          {{ "Get-SmbConnection" | tojson }}
+        ]
+      },
+      {
+        "task": "RemoteDesktop",
+        "computer": {{ ludus_sheepl_rdp_target | tojson }},
+        "username": {{ ludus_sheepl_rdp_user | tojson }},
+        "password": {{ ludus_sheepl_rdp_password | tojson }},
+        "subtasks": [
+          {
+            "task": "CommandShell",
+            "cmd": [
+              {{ "whoami /all" | tojson }},
+              {{ "hostname" | tojson }},
+              {{ "net use" | tojson }}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
