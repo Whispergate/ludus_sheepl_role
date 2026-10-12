@@ -78,6 +78,11 @@
         src: open_intake.ps1
         dest: "{{ ludus_sheepl_install_dir }}\\open_intake.ps1"
 
+    - name: Copy the mail attachment fetcher
+      ansible.windows.win_copy:
+        src: fetch_mail_attachment.ps1
+        dest: "{{ ludus_sheepl_install_dir }}\\fetch_mail_attachment.ps1"
+
     # --- 4. Run the activity as the NPC at logon ----------------------------
     # interactive_token = runs inside the NPC's own logon session with no stored
     # password; the VM must autologon this user for the trigger to fire.

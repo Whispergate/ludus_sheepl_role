@@ -9,18 +9,18 @@
       {
         "task": "Browser",
         "browser": "edge",
-        "urls": ["{{ ludus_sheepl_portal_url }}"]
+        "urls": ["{{ ludus_sheepl_mail_url | default('') }}"]
       },
       {
         "task": "CommandShell",
         "cmd": [
-          "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File C:/ProgramData/Sheepl/open_intake.ps1"
+          "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File C:/ProgramData/Sheepl/fetch_mail_attachment.ps1 -MailServerUrl '{{ ludus_sheepl_mail_url | default('') }}'"
         ]
       },
       {
         "task": "Browser",
         "browser": "edge",
-        "urls": ["{{ ludus_sheepl_intranet_url }}"]
+        "urls": ["{{ ludus_sheepl_intranet_url | default('') }}"]
       }
     ]
   }
