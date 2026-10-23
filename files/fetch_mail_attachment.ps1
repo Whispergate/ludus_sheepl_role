@@ -118,7 +118,7 @@ foreach ($msg in $messages) {
             $dest = Join-Path $DownloadDir $att.FileName
             try {
                 Invoke-WebRequest -Uri "$base/api/v1/message/$id/part/$($att.PartID)" `
-                    -OutFile $dest -TimeoutSec 30
+                    -OutFile $dest -TimeoutSec 30 -UseBasicParsing
                 $downloaded += $dest
             } catch {}
         }
@@ -143,7 +143,7 @@ foreach ($msg in $messages) {
             $dest = Join-Path $DownloadDir $fname
             try {
                 Invoke-WebRequest -Uri "$base/api/v1/messages/$id/mime/part/$i/download" `
-                    -OutFile $dest -TimeoutSec 30
+                    -OutFile $dest -TimeoutSec 30 -UseBasicParsing
                 $downloaded += $dest
             } catch {}
         }
