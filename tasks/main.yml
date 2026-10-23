@@ -102,6 +102,17 @@
         state: present
         enabled: true
 
+    # The logon trigger only fires on a NEW logon, but this role runs AFTER the
+    # NPC is already autologged-in, so the trigger would not fire until the next
+    # reboot and the activity would never start on first deploy. Kick it off now
+    # (schtasks honours the task's own NPC principal, so it runs in their live
+    # session). Best-effort: the logon trigger still covers subsequent boots.
+    - name: Start the Sheepl activity now (the NPC is already logged on)
+      ansible.windows.win_command: schtasks /run /tn "{{ ludus_sheepl_task_name }}"
+      register: _sheepl_started
+      changed_when: _sheepl_started.rc == 0
+      failed_when: false
+
   vars:
     _sheepl_ctl_dir: "/tmp/sheepl-{{ inventory_hostname }}"
     _sheepl_profile_name: "{{ ludus_sheepl_name | lower }}_{{ ludus_sheepl_profile }}"

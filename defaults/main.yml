@@ -15,7 +15,12 @@
 # The interactive user whose session runs the activity. MUST be the VM's
 # autologon user: the scheduled task uses an interactive-token logon trigger
 # (no stored password), so it only fires inside that user's live session.
-ludus_sheepl_npc_user: "{{ autologon_user | default('Administrator') }}"
+# Ludus only scopes the flat `autologon_user` var inside its own plays, not the
+# user-defined-roles play where this role runs, so it would wrongly default to
+# Administrator (task created for a user who is never logged on -> never fires).
+# Resolve it from the range config the way Ludus itself does, preferring the
+# flat var when it is in scope.
+ludus_sheepl_npc_user: "{{ autologon_user | default((ludus | selectattr('vm_name', 'equalto', inventory_hostname) | first).windows.autologon_user | default('Administrator', true), true) }}"
 # Short (sAMAccountName) form used for the Sheepl name and intake path.
 ludus_sheepl_name: "{{ ludus_sheepl_npc_user | regex_replace('^.*\\\\', '') }}"
 
