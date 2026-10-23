@@ -116,6 +116,7 @@ foreach ($msg in $messages) {
 
         foreach ($att in $detail.Attachments) {
             $dest = Join-Path $DownloadDir $att.FileName
+            if (Test-Path $dest) { continue }
             try {
                 Invoke-WebRequest -Uri "$base/api/v1/message/$id/part/$($att.PartID)" `
                     -OutFile $dest -TimeoutSec 30 -UseBasicParsing
@@ -141,6 +142,7 @@ foreach ($msg in $messages) {
             if ($d -match 'filename="?([^";\s]+)"?') { $fname = $Matches[1] }
 
             $dest = Join-Path $DownloadDir $fname
+            if (Test-Path $dest) { continue }
             try {
                 Invoke-WebRequest -Uri "$base/api/v1/messages/$id/mime/part/$i/download" `
                     -OutFile $dest -TimeoutSec 30 -UseBasicParsing

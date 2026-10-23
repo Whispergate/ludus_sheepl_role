@@ -14,7 +14,7 @@ responsibility, because it differs per target (AutoIT's {!} vs shell quoting).
 
 Primitive summary:
     Comment(text)              a source comment
-    RunDialog(command)         open the Run dialog and launch `command`
+    RunDialog(command)         launch `command` via Run() (no Win+R)
     TypeLine(text)             type `text` then press Enter
     TypeText(text)             type `text` with no trailing Enter
     SendKeys(keys)             send raw key tokens verbatim (e.g. "^t", "{ENTER}")

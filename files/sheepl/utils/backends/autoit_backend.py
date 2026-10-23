@@ -82,9 +82,10 @@ class AutoItBackend(Backend):
         """
         Escape a user supplied string so AutoIT's Send() emits it literally.
 
-        Mirrors BaseCMD.escape_autoit_send. Used when rendering the TypeLine,
-        TypeText and RunDialog primitives. Tasks not yet converted to
-        primitives still call escape_autoit_send directly.
+        Mirrors BaseCMD.escape_autoit_send. Used when rendering the TypeLine
+        and TypeText primitives. RunDialog uses _escape_literal instead since
+        Run() is a string argument, not a Send() target. Tasks not yet
+        converted to primitives still call escape_autoit_send directly.
         """
         if not isinstance(text, str):
             return text
@@ -162,10 +163,7 @@ class AutoItBackend(Backend):
         if op == "comment":
             return "; " + p.text
         if op == "rundialog":
-            return ('Send("#r")\n'
-                    '; Wait 10 seconds for the Run dialogue window to appear.\n'
-                    'WinWaitActive("Run", "", 10)\n'
-                    'Send("{}{{ENTER}}")'.format(self.escape(p.command)))
+            return 'Run("{}")'.format(self._escape_literal(p.command))
         if op == "type_line":
             return 'Send("{}{{ENTER}}")'.format(self.escape(p.text))
         if op == "type_text":
